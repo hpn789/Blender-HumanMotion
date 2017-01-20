@@ -1,0 +1,124 @@
+import bpy
+
+def createArmature(origin):
+    # Create armature and object
+    amt = bpy.data.armatures.new('arm')
+    rig = bpy.data.objects.new('rig', amt)
+    rig.location = origin
+    rig.show_x_ray = True
+    amt.show_names = True
+    # Link object to scene
+    scn = bpy.context.scene
+    scn.objects.link(rig)
+    scn.objects.active = rig
+    scn.update()
+ 
+    # Create bones
+    
+    coef = 1
+    
+    bpy.ops.object.editmode_toggle()
+    
+    spine1 = amt.edit_bones.new('spine1')
+    spine1.head = (0,0,8)
+    spine1.tail = (0,0,10)
+    
+    spine2 = amt.edit_bones.new('spine2')
+    spine2.head = (0,0,10)
+    spine2.tail = (0,0,12)
+    
+    spine3 = amt.edit_bones.new('spine3')
+    spine3.head = (0,0,12)
+    spine3.tail = (0,0,14)
+    
+    neck = amt.edit_bones.new('neck')
+    neck.head = (0,0,14)
+    neck.tail = (0,0,15)
+    
+    head = amt.edit_bones.new('head')
+    head.head = (0,0,15)
+    head.tail = (0,0,17)
+    
+    leftArm = amt.edit_bones.new('leftArm')
+    leftArm.head = (0,0,14)
+    leftArm.tail = (0,-3,14)
+    
+    leftForearm = amt.edit_bones.new('leftForearm')
+    leftForearm.head = (0,-3,14)
+    leftForearm.tail = (0,-6,14)
+    
+    leftHand = amt.edit_bones.new('leftHand')
+    leftHand.head = (0,-6,14)
+    leftHand.tail = (0,-7,14)
+    
+    rightArm = amt.edit_bones.new('rightArm')
+    rightArm.head = (0,0,14)
+    rightArm.tail = (0,3,14)
+    
+    rigthForearm = amt.edit_bones.new('rigthForearm')
+    rigthForearm.head = (0,3,14)
+    rigthForearm.tail = (0,6,14)
+    
+    rightHand = amt.edit_bones.new('rightHand')
+    rightHand.head = (0,6,14)
+    rightHand.tail = (0,7,14)
+ 
+    leftThigh = amt.edit_bones.new('leftThigh')
+    leftThigh.head = (0,-1.5,8)
+    leftThigh.tail = (0,-1.5,4)
+    
+    leftLeg = amt.edit_bones.new('leftLeg')
+    leftLeg.head = (0,-1.5,4)
+    leftLeg.tail = (0,-1.5,0)
+    
+    leftFeet = amt.edit_bones.new('leftFeet')
+    leftFeet.head = (0,-1.5,0)
+    leftFeet.tail = (1,-1.5,0)
+ 
+    rightThigh = amt.edit_bones.new('rightThigh')
+    rightThigh.head = (0,1.5,8)
+    rightThigh.tail = (0,1.5,4)
+    
+    rightLeg = amt.edit_bones.new('rightLeg')
+    rightLeg.head = (0,1.5,4)
+    rightLeg.tail = (0,1.5,0)
+    
+    rightFeet = amt.edit_bones.new('rightFeet')
+    rightFeet.head = (0,1.5,0)
+    rightFeet.tail = (1,1.5,0)
+ 
+ 
+    # Bone constraints. Armature must be in pose mode.
+    bpy.ops.object.mode_set(mode='POSE')
+    """
+    # IK constraint Mid -> Tip
+    pMid = rig.pose.bones['spine1']
+    cns1 = pMid.constraints.new('IK')
+    cns1.name = 'Ik'
+    cns1.target = rig
+    cns1.subtarget = 'spine2'
+    cns1.chain_count = 1
+ 
+    # StretchTo constraint Mid -> Tip with influence 0.5
+    cns2 = pMid.constraints.new('STRETCH_TO')
+    cns2.name = 'Stretchy'
+    cns2.target = rig
+    cns2.subtarget = 'Tip'
+    cns2.influence = 0.5
+    cns2.keep_axis = 'PLANE_X'
+    cns2.volume = 'VOLUME_XZX'
+ 
+    # Copy rotation constraints Base -> Tip
+    pBase = rig.pose.bones['Base']
+    cns3 = pBase.constraints.new('COPY_ROTATION')
+    cns3.name = 'Copy_Rotation'
+    cns3.target = rig
+    cns3.subtarget = 'Tip'
+    cns3.owner_space = 'WORLD'
+    cns3.target_space = 'WORLD'"""
+ 
+    bpy.ops.object.mode_set(mode='OBJECT')
+    return rig
+
+if __name__ == "__main__":
+    createArmature((0,0,0))
