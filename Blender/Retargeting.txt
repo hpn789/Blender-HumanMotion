@@ -1,0 +1,51 @@
+import bpy
+
+offsetBones = {}
+nameBones = []
+
+def retrieveAllNameBones(content):
+    
+    # On récupère le nom du root en premier
+    posDebRootName = content.find("root") + 5
+    posEndRootName = content.find("{") - 1 
+    
+    nameBones.append(content[posDebRootName : posEndRootName])
+    content = content[ content.find("{") + 1 : ]
+    
+    # On récupère le nom des autres os ensuite
+    while content.find("joint") != -1 :
+        posDebBone = content.find("joint") + 6
+        posEndBone = content.find("{") - 2
+        nameBone = content[posDebBone : posEndBone]
+        
+        if nameBone.find("\n") != -1 :
+            nameBone = nameBone[ : nameBone.find("\n")]
+            
+        nameBones.append(nameBone)
+        content = content[content.find("{") + 1 : ]
+    
+def parsingBVH(fileName):
+    myFile = open(fileName)
+    fileContent = myFile.read()
+    
+    # Pour gérer la casse on met tout en minuscule
+    fileContent = fileContent.lower()
+    
+    # On recupère le nom de tous les bones du BVH
+    retrieveAllNameBones(fileContent)
+    
+    # On récupère les position offset de tous les bones
+    # Hips
+    posDebHips = fileContent.find("hips") + 4
+    fileContent = fileContent[posDebHips:]
+    posDebOffsetHips = fileContent.find("offset") + 7
+    posEndOffsetHips = fileContent.find("channels") - 2
+    posOffsetHips = fileContent[posDebOffsetHips : posEndOffsetHips]
+    offsetBones["hips"] = posOffsetHips
+    
+def retargeting(fileName):
+    parsingBVH(fileName)
+    
+# MAIN #
+
+retargeting("C:/Users/User/Documents/GitHub/Blender-HumanMotion/Blender/BVH/01/01_01.bvh")

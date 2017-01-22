@@ -19,15 +19,15 @@ def createArmature(origin):
     
     bpy.ops.object.editmode_toggle()
     
-    spine1 = amt.edit_bones.new('spine1')
+    spine1 = amt.edit_bones.new('hips')
     spine1.head = (0,0,8)
     spine1.tail = (0,0,10)
     
-    spine2 = amt.edit_bones.new('spine2')
+    spine2 = amt.edit_bones.new('lowerback')
     spine2.head = (0,0,10)
     spine2.tail = (0,0,12)
     
-    spine3 = amt.edit_bones.new('spine3')
+    spine3 = amt.edit_bones.new('spine')
     spine3.head = (0,0,12)
     spine3.tail = (0,0,14)
     
@@ -63,7 +63,7 @@ def createArmature(origin):
     rightHand.head = (0,6,14)
     rightHand.tail = (0,7,14)
  
-    leftThigh = amt.edit_bones.new('leftThigh')
+    leftThigh = amt.edit_bones.new('leftUpLeg')
     leftThigh.head = (0,-1.5,8)
     leftThigh.tail = (0,-1.5,4)
     
@@ -75,7 +75,7 @@ def createArmature(origin):
     leftFeet.head = (0,-1.5,0)
     leftFeet.tail = (1,-1.5,0)
  
-    rightThigh = amt.edit_bones.new('rightThigh')
+    rightThigh = amt.edit_bones.new('rightUpLeg')
     rightThigh.head = (0,1.5,8)
     rightThigh.tail = (0,1.5,4)
     
