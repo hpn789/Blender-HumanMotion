@@ -1,7 +1,9 @@
 import bpy
 
-def createArmature(origin):
+def createArmature(origin, coef):
     # Create armature and object
+    #bpy.ops.object.mode_set(mode='OBJECT')
+    
     amt = bpy.data.armatures.new('arm')
     rig = bpy.data.objects.new('rig', amt)
     rig.location = origin
@@ -15,77 +17,105 @@ def createArmature(origin):
  
     # Create bones
     
-    coef = 1
-    
     bpy.ops.object.editmode_toggle()
     
-    spine1 = amt.edit_bones.new('hips')
-    spine1.head = (0,0,8)
-    spine1.tail = (0,0,10)
+    spine1 = amt.edit_bones.new('spine1')
+    spine1.head = (0,0,8*coef)
+    spine1.tail = (0,0,10*coef)
     
-    spine2 = amt.edit_bones.new('lowerback')
-    spine2.head = (0,0,10)
-    spine2.tail = (0,0,12)
+    spine2 = amt.edit_bones.new('spine2')
+    spine2.head = (0,0,10*coef)
+    spine2.tail = (0,0,12*coef)
+    spine2.use_connect = True
+    spine2.parent = spine1
     
-    spine3 = amt.edit_bones.new('spine')
-    spine3.head = (0,0,12)
-    spine3.tail = (0,0,14)
+    spine3 = amt.edit_bones.new('spine3')
+    spine3.head = (0,0,12*coef)
+    spine3.tail = (0,0,14*coef)
+    spine3.use_connect = True
+    spine3.parent = spine2
     
     neck = amt.edit_bones.new('neck')
-    neck.head = (0,0,14)
-    neck.tail = (0,0,15)
+    neck.head = (0,0,14*coef)
+    neck.tail = (0,0,15*coef)
+    neck.use_connect = True
+    neck.parent = spine3
     
     head = amt.edit_bones.new('head')
-    head.head = (0,0,15)
-    head.tail = (0,0,17)
+    head.head = (0,0,15*coef)
+    head.tail = (0,0,17*coef)
+    head.use_connect = True
+    head.parent = neck
     
     leftArm = amt.edit_bones.new('leftArm')
-    leftArm.head = (0,0,14)
-    leftArm.tail = (0,-3,14)
+    leftArm.head = (0,0,14*coef)
+    leftArm.tail = (0,-3*coef,14*coef)
+    leftArm.use_connect = True
+    leftArm.parent = spine3
     
     leftForearm = amt.edit_bones.new('leftForearm')
-    leftForearm.head = (0,-3,14)
-    leftForearm.tail = (0,-6,14)
+    leftForearm.head = (0,-3*coef,14*coef)
+    leftForearm.tail = (0,-6*coef,14*coef)
+    leftForearm.use_connect = True
+    leftForearm.parent = leftArm
     
     leftHand = amt.edit_bones.new('leftHand')
-    leftHand.head = (0,-6,14)
-    leftHand.tail = (0,-7,14)
+    leftHand.head = (0,-6*coef,14*coef)
+    leftHand.tail = (0,-7*coef,14*coef)
+    leftHand.use_connect = True
+    leftHand.parent = leftForearm
     
     rightArm = amt.edit_bones.new('rightArm')
-    rightArm.head = (0,0,14)
-    rightArm.tail = (0,3,14)
+    rightArm.head = (0,0,14*coef)
+    rightArm.tail = (0,3*coef,14*coef)
+    rightArm.use_connect = True
+    rightArm.parent = spine3
     
     rigthForearm = amt.edit_bones.new('rigthForearm')
-    rigthForearm.head = (0,3,14)
-    rigthForearm.tail = (0,6,14)
+    rigthForearm.head = (0,3*coef,14*coef)
+    rigthForearm.tail = (0,6*coef,14*coef)
+    rigthForearm.use_connect = True
+    rigthForearm.parent = rightArm
     
     rightHand = amt.edit_bones.new('rightHand')
-    rightHand.head = (0,6,14)
-    rightHand.tail = (0,7,14)
+    rightHand.head = (0,6*coef,14*coef)
+    rightHand.tail = (0,7*coef,14*coef)
+    rightHand.use_connect = True
+    rightHand.parent = rigthForearm
  
-    leftThigh = amt.edit_bones.new('leftUpLeg')
-    leftThigh.head = (0,-1.5,8)
-    leftThigh.tail = (0,-1.5,4)
+    leftThigh = amt.edit_bones.new('leftThigh')
+    leftThigh.head = (0,-1.5*coef,8*coef)
+    leftThigh.tail = (0,-1.5*coef,4*coef)
+    leftThigh.parent = spine1
     
     leftLeg = amt.edit_bones.new('leftLeg')
-    leftLeg.head = (0,-1.5,4)
-    leftLeg.tail = (0,-1.5,0)
+    leftLeg.head = (0,-1.5*coef,4*coef)
+    leftLeg.tail = (0,-1.5*coef,0)
+    leftLeg.use_connect = True
+    leftLeg.parent = leftThigh
     
     leftFeet = amt.edit_bones.new('leftFeet')
-    leftFeet.head = (0,-1.5,0)
-    leftFeet.tail = (1,-1.5,0)
+    leftFeet.head = (0,-1.5*coef,0)
+    leftFeet.tail = (1*coef,-1.5*coef,0)
+    leftFeet.use_connect = True
+    leftFeet.parent = leftLeg
  
-    rightThigh = amt.edit_bones.new('rightUpLeg')
-    rightThigh.head = (0,1.5,8)
-    rightThigh.tail = (0,1.5,4)
+    rightThigh = amt.edit_bones.new('rightThigh')
+    rightThigh.head = (0,1.5*coef,8*coef)
+    rightThigh.tail = (0,1.5*coef,4*coef)
+    rightThigh.parent = spine1
     
     rightLeg = amt.edit_bones.new('rightLeg')
-    rightLeg.head = (0,1.5,4)
-    rightLeg.tail = (0,1.5,0)
+    rightLeg.head = (0,1.5*coef,4*coef)
+    rightLeg.tail = (0,1.5*coef,0*coef)
+    rightLeg.use_connect = True
+    rightLeg.parent = rightThigh
     
     rightFeet = amt.edit_bones.new('rightFeet')
-    rightFeet.head = (0,1.5,0)
-    rightFeet.tail = (1,1.5,0)
+    rightFeet.head = (0,1.5*coef,0)
+    rightFeet.tail = (1*coef,1.5*coef,0)
+    rightFeet.use_connect = True
+    rightFeet.parent = rightLeg
  
  
     # Bone constraints. Armature must be in pose mode.
@@ -121,4 +151,4 @@ def createArmature(origin):
     return rig
 
 if __name__ == "__main__":
-    createArmature((0,0,0))
+    createArmature((0,0,0), .1)
