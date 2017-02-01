@@ -1,11 +1,18 @@
 import bpy
 
 def createArmature(origin, coef):
+    
+    #bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete(use_global=False)
+    
+    
     # Create armature and object
     #bpy.ops.object.mode_set(mode='OBJECT')
     
     amt = bpy.data.armatures.new('arm')
     rig = bpy.data.objects.new('rig', amt)
+    edit_bones={}
     rig.location = origin
     rig.show_x_ray = True
     amt.show_names = True
@@ -17,20 +24,22 @@ def createArmature(origin, coef):
  
     # Create bones
     
+    coefArticulation=.1*coef
+    
     bpy.ops.object.editmode_toggle()
     
     spine1 = amt.edit_bones.new('spine1')
     spine1.head = (0,0,8*coef)
-    spine1.tail = (0,0,10*coef)
+    spine1.tail = (-coefArticulation,0,10*coef)
     
     spine2 = amt.edit_bones.new('spine2')
-    spine2.head = (0,0,10*coef)
-    spine2.tail = (0,0,12*coef)
+    spine2.head = (-coefArticulation,0,10*coef)
+    spine2.tail = (-coefArticulation,0,12*coef)
     spine2.use_connect = True
     spine2.parent = spine1
     
     spine3 = amt.edit_bones.new('spine3')
-    spine3.head = (0,0,12*coef)
+    spine3.head = (-coefArticulation,0,12*coef)
     spine3.tail = (0,0,14*coef)
     spine3.use_connect = True
     spine3.parent = spine2
@@ -49,12 +58,12 @@ def createArmature(origin, coef):
     
     leftArm = amt.edit_bones.new('leftArm')
     leftArm.head = (0,0,14*coef)
-    leftArm.tail = (0,-3*coef,14*coef)
+    leftArm.tail = (-coefArticulation,-3*coef,14*coef)
     leftArm.use_connect = True
     leftArm.parent = spine3
     
     leftForearm = amt.edit_bones.new('leftForearm')
-    leftForearm.head = (0,-3*coef,14*coef)
+    leftForearm.head = (-coefArticulation,-3*coef,14*coef)
     leftForearm.tail = (0,-6*coef,14*coef)
     leftForearm.use_connect = True
     leftForearm.parent = leftArm
@@ -85,68 +94,165 @@ def createArmature(origin, coef):
  
     leftThigh = amt.edit_bones.new('leftThigh')
     leftThigh.head = (0,-1.5*coef,8*coef)
-    leftThigh.tail = (0,-1.5*coef,4*coef)
+    leftThigh.tail = (coefArticulation,-1.5*coef,4*coef)
     leftThigh.parent = spine1
     
     leftLeg = amt.edit_bones.new('leftLeg')
-    leftLeg.head = (0,-1.5*coef,4*coef)
-    leftLeg.tail = (0,-1.5*coef,0)
+    leftLeg.head = (coefArticulation,-1.5*coef,4*coef)
+    leftLeg.tail = (0,-1.5*coef,0.5*coef)
     leftLeg.use_connect = True
     leftLeg.parent = leftThigh
     
     leftFeet = amt.edit_bones.new('leftFeet')
-    leftFeet.head = (0,-1.5*coef,0)
-    leftFeet.tail = (1*coef,-1.5*coef,0)
+    leftFeet.head = (0,-1.5*coef,0.5*coef)
+    leftFeet.tail = (2*coef,-1.5*coef,0)
     leftFeet.use_connect = True
     leftFeet.parent = leftLeg
  
     rightThigh = amt.edit_bones.new('rightThigh')
     rightThigh.head = (0,1.5*coef,8*coef)
-    rightThigh.tail = (0,1.5*coef,4*coef)
+    rightThigh.tail = (coefArticulation,1.5*coef,4*coef)
     rightThigh.parent = spine1
     
     rightLeg = amt.edit_bones.new('rightLeg')
-    rightLeg.head = (0,1.5*coef,4*coef)
-    rightLeg.tail = (0,1.5*coef,0*coef)
+    rightLeg.head = (coefArticulation,1.5*coef,4*coef)
+    rightLeg.tail = (0,1.5*coef,0.5*coef)
     rightLeg.use_connect = True
     rightLeg.parent = rightThigh
     
     rightFeet = amt.edit_bones.new('rightFeet')
-    rightFeet.head = (0,1.5*coef,0)
-    rightFeet.tail = (1*coef,1.5*coef,0)
+    rightFeet.head = (0,1.5*coef,0.5*coef)
+    rightFeet.tail = (2*coef,1.5*coef,0)
     rightFeet.use_connect = True
     rightFeet.parent = rightLeg
- 
- 
-    # Bone constraints. Armature must be in pose mode.
+    
+    rightLegIK = amt.edit_bones.new('rightLegIK')
+    rightLegIK.head = (0,1.5*coef,0.5*coef)
+    rightLegIK.tail = (-1.5*coef,1.5*coef,0.5*coef)
+    rightLegIK.use_deform = False
+    
+    leftLegIK = amt.edit_bones.new('leftLegIK')
+    leftLegIK.head = (0,-1.5*coef,0.5*coef)
+    leftLegIK.tail = (-1.5*coef,-1.5*coef,0.5*coef)
+    leftLegIK.use_deform = False
+    
+    rightKneeIK = amt.edit_bones.new('rightKneeIK')
+    rightKneeIK.head = (7*coef,1.5*coef,4*coef)
+    rightKneeIK.tail = (7*coef,1.5*coef,7*coef)
+    rightKneeIK.use_deform = False
+    
+    leftKneeIK = amt.edit_bones.new('leftKneeIK')
+    leftKneeIK.head = (7*coef,-1.5*coef,4*coef)
+    leftKneeIK.tail = (7*coef,-1.5*coef,7*coef)
+    leftKneeIK.use_deform = False
+    
+    rightElbowIK = amt.edit_bones.new('rightElbowIK')
+    rightElbowIK.head = (7*coef,3*coef,14*coef)
+    rightElbowIK.tail = (7*coef,3*coef,17*coef)
+    rightElbowIK.use_deform = False
+    
+    leftElbowIK = amt.edit_bones.new('leftElbowIK')
+    leftElbowIK.head = (7*coef,-3*coef,14*coef)
+    leftElbowIK.tail = (7*coef,-3*coef,17*coef)
+    leftElbowIK.use_deform = False
+    
+    rightArmIK = amt.edit_bones.new('rightArmIK')
+    rightArmIK.head = (0,7*coef,14*coef)
+    rightArmIK.tail = (-1*coef,7*coef,14*coef)
+    rightArmIK.use_deform = False
+    
+    leftArmIK = amt.edit_bones.new('leftArmIK')
+    leftArmIK.head = (0,-7*coef,14*coef)
+    leftArmIK.tail = (-1*coef,-7*coef,14*coef)
+    leftArmIK.use_deform = False
+    
+    control = amt.edit_bones.new('control')
+    control.head = (0,0,0)
+    control.tail = (8*coef,0,0)
+    control.use_deform = False
+    
+    bpy.ops.armature.select_all(action='DESELECT')
+    rightLegIK.select = True;
+    leftLegIK.select = True;
+    rightArmIK.select = True;
+    leftArmIK.select = True;
+    rightKneeIK.select = True;
+    leftKneeIK.select = True;
+    rightElbowIK.select = True;
+    leftElbowIK.select = True;
+    spine1.select = True;
+    amt.edit_bones.active=control;
+    bpy.ops.armature.parent_set(type='OFFSET')
+    
+    """bpy.ops.armature.select_all(action='DESELECT')
+    rightFeet.select = True;
+    amt.edit_bones.active=rightLegIK;
+    bpy.ops.armature.parent_set(type='OFFSET')
+    
+    bpy.ops.armature.select_all(action='DESELECT')
+    leftFeet.select = True;
+    amt.edit_bones.active=leftLegIK;
+    bpy.ops.armature.parent_set(type='OFFSET')"""
+    
     bpy.ops.object.mode_set(mode='POSE')
-    """
-    # IK constraint Mid -> Tip
-    pMid = rig.pose.bones['spine1']
-    cns1 = pMid.constraints.new('IK')
-    cns1.name = 'Ik'
-    cns1.target = rig
-    cns1.subtarget = 'spine2'
-    cns1.chain_count = 1
- 
-    # StretchTo constraint Mid -> Tip with influence 0.5
-    cns2 = pMid.constraints.new('STRETCH_TO')
-    cns2.name = 'Stretchy'
-    cns2.target = rig
-    cns2.subtarget = 'Tip'
-    cns2.influence = 0.5
-    cns2.keep_axis = 'PLANE_X'
-    cns2.volume = 'VOLUME_XZX'
- 
-    # Copy rotation constraints Base -> Tip
-    pBase = rig.pose.bones['Base']
-    cns3 = pBase.constraints.new('COPY_ROTATION')
-    cns3.name = 'Copy_Rotation'
-    cns3.target = rig
-    cns3.subtarget = 'Tip'
-    cns3.owner_space = 'WORLD'
-    cns3.target_space = 'WORLD'"""
- 
+    
+    bpy.ops.pose.select_all(action='DESELECT')
+    bpy.context.object.pose.bones['leftArmIK'].bone.select = True
+    bpy.context.object.data.bones.active = bpy.context.object.data.bones['leftHand']
+    bpy.ops.pose.constraint_add_with_targets(type='IK')
+    cons = bpy.context.object.pose.bones["leftHand"].constraints["IK"]
+    cons.chain_count=3
+    cons.pole_target=bpy.data.objects["rig"]
+    cons.pole_subtarget = "leftElbowIK"
+    
+    bpy.ops.pose.select_all(action='DESELECT')
+    bpy.context.object.pose.bones['rightArmIK'].bone.select = True
+    bpy.context.object.data.bones.active = bpy.context.object.data.bones['rightHand']
+    bpy.ops.pose.constraint_add_with_targets(type='IK')
+    cons = bpy.context.object.pose.bones["rightHand"].constraints["IK"]
+    cons.chain_count=3
+    cons.pole_target=bpy.data.objects["rig"]
+    cons.pole_subtarget = "rightElbowIK"
+    
+    bpy.ops.pose.select_all(action='DESELECT')
+    bpy.context.object.pose.bones['leftLegIK'].bone.select = True
+    bpy.context.object.data.bones.active = bpy.context.object.data.bones['leftLeg']
+    bpy.ops.pose.constraint_add_with_targets(type='IK')
+    cons = bpy.context.object.pose.bones["leftLeg"].constraints["IK"]
+    cons.chain_count=2
+    cons.pole_target=bpy.data.objects["rig"]
+    cons.pole_subtarget = "leftKneeIK"
+    
+    bpy.ops.pose.select_all(action='DESELECT')
+    bpy.context.object.pose.bones['rightLegIK'].bone.select = True
+    bpy.context.object.data.bones.active = bpy.context.object.data.bones['rightLeg']
+    bpy.ops.pose.constraint_add_with_targets(type='IK')
+    cons = bpy.context.object.pose.bones["rightLeg"].constraints["IK"]
+    cons.chain_count=2
+    cons.pole_target=bpy.data.objects["rig"]
+    cons.pole_subtarget = "rightKneeIK"
+    
+    bpy.context.scene.layers[1]=True
+    bpy.context.scene.layers[0]=False
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete(use_global=False)
+    bpy.ops.mesh.primitive_torus_add(rotation=(0, 0, 0), view_align=False, location=(0, 0, 0), major_radius=coef*4, minor_radius=.2*coef)
+    bpy.context.selected_objects[0].name="MyTorus"
+    bpy.ops.mesh.primitive_uv_sphere_add(size=coef, location=(0, 0, 0))
+    bpy.context.selected_objects[0].name="MySphere"
+    bpy.context.scene.layers[0]=True
+    bpy.context.scene.layers[1]=False
+    
+    #amt.select=True
+    bpy.context.scene.objects.active = bpy.data.objects['rig']
+    bpy.ops.object.mode_set(mode='POSE')
+    bpy.context.object.pose.bones["control"].custom_shape = bpy.data.objects["MyTorus"]
+    bpy.context.object.pose.bones["rightKneeIK"].custom_shape = bpy.data.objects["MySphere"]
+    bpy.context.object.pose.bones["rightElbowIK"].custom_shape = bpy.data.objects["MySphere"]
+    bpy.context.object.pose.bones["leftKneeIK"].custom_shape = bpy.data.objects["MySphere"]
+    bpy.context.object.pose.bones["leftElbowIK"].custom_shape = bpy.data.objects["MySphere"]
+
     bpy.ops.object.mode_set(mode='OBJECT')
     return rig
 
