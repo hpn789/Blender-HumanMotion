@@ -1,6 +1,53 @@
 import bpy
 from bpy_extras import view3d_utils
 
+class CustomPanel(bpy.types.Panel):
+    
+    bl_label = "Auto Rigify"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+
+    def draw(self, context):
+        
+        self.layout.operator("rig.positionview")
+        self.layout.operator("rig.placebalise")
+        self.layout.operator("rig.generaterig")
+
+
+bpy.utils.register_class(CustomPanel)
+
+class RIG_OT_positionview(bpy.types.Operator):
+    bl_idname = "rig.positionview"
+    bl_label = "Position View"
+ 
+    def execute(self, context):
+        positionView()
+        return{'FINISHED'}    
+ 
+#    Registration
+bpy.utils.register_class(RIG_OT_positionview)
+
+class RIG_OT_placebalise(bpy.types.Operator):
+    bl_idname = "rig.placebalise"
+    bl_label = "Place balises"
+ 
+    def execute(self, context):
+        placerBalise()
+        return{'FINISHED'}    
+ 
+#    Registration
+bpy.utils.register_class(RIG_OT_placebalise)
+
+class RIG_OT_generaterig(bpy.types.Operator):
+    bl_idname = "rig.generaterig"
+    bl_label = "Generate rig"
+ 
+    def execute(self, context):
+        createArmature((0,0,0), .1)
+        return{'FINISHED'}    
+ 
+#    Registration
+bpy.utils.register_class(RIG_OT_generaterig)
 
 class ModalOperator(bpy.types.Operator):
     bl_idname = "object.modal_operator"
@@ -31,7 +78,7 @@ class ModalOperator(bpy.types.Operator):
                         override = {'area': area, 'region': region, 'edit_object': bpy.context.edit_object}
                         event = self.event
                         rv3d = area.spaces[0].region_3d
-                        coord = event.mouse_region_x-region.x, event.mouse_region_y
+                        coord = event.mouse_region_x, event.mouse_region_y
 
                         # get the ray from the viewport and mouse
                         ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
@@ -326,11 +373,11 @@ def placerBalise():
         bpy.ops.mesh.primitive_uv_sphere_add(size=1, location=(0, 0, 0))
         bpy.ops.object.modal_operator('INVOKE_DEFAULT')
         nbPlacer+=1
-
-if __name__ == "__main__":
-    createArmature((0,0,0), .1)
-    #bpy.ops.wm.mouse_position('INVOKE_DEFAULT')
-    
+        
+def placerBalise():
+    bpy.ops.object.modal_operator('INVOKE_DEFAULT')
+        
+def positionView():
     for area in bpy.context.screen.areas:
         if area.type == 'VIEW_3D':
             for region in area.regions:
@@ -340,11 +387,8 @@ if __name__ == "__main__":
                     override = {'area': area, 'region': region, 'edit_object': bpy.context.edit_object}
                     bpy.ops.view3d.viewnumpad(override, type = 'RIGHT')
                     
-    nbBalises = 7
-    nbPlacer = 0;
-    
-    #placerBalise();
 
-    bpy.ops.object.modal_operator('INVOKE_DEFAULT')
+if __name__ == "__main__":
+    #bpy.ops.wm.mouse_position('INVOKE_DEFAULT')
     
     print
