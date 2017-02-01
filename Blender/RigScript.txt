@@ -1,25 +1,29 @@
 import bpy
 from bpy_extras import view3d_utils
 
-area3D = None
-
-nbBalises = None
-nbPlacer = None
 
 class ModalOperator(bpy.types.Operator):
     bl_idname = "object.modal_operator"
     bl_label = "Simple Modal Operator"
+    
+    nbBalises = 7
+    nbPlacer = 0
+    
+    names = ["topHead", "neckBase", "pelvis", "leftHand", "rightHand", "leftFeet", "rightFeet"]
+    
+    def placerRepere(self):
+        bpy.ops.mesh.primitive_uv_sphere_add(size=.1, location=(0, 0, 0))
+        bpy.context.selected_objects[0].name=self.names[self.nbPlacer]
 
     def __init__(self):
         print("Start")
+        self.placerRepere()
 
     def __del__(self):
         #placerBalise()
         print("End")
 
     def execute(self, context):
-        
-        
         for area in bpy.context.screen.areas:
             if area.type == 'VIEW_3D':
                 for region in area.regions:
@@ -31,7 +35,7 @@ class ModalOperator(bpy.types.Operator):
 
                         # get the ray from the viewport and mouse
                         ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
-                        context.object.location.x = ray_origin.x
+                        context.object.location.y = ray_origin.y
                         context.object.location.z = ray_origin.z
         
 
@@ -39,9 +43,13 @@ class ModalOperator(bpy.types.Operator):
         if event.type == 'MOUSEMOVE':  # Apply
             self.event = event
             self.execute(context)
-        elif event.type == 'LEFTMOUSE':  # Confirm
-            return {'FINISHED'}
-        elif event.type in ('RIGHTMOUSE', 'ESC'):  # Cancel
+        elif event.type == 'LEFTMOUSE' and event.value == 'RELEASE':  # Confirm
+            self.nbPlacer+=1
+            if self.nbPlacer == self.nbBalises:
+                return {'FINISHED'}
+            else:
+                self.placerRepere()
+        elif event.type in ( 'ESC'):  # Cancel
             return {'CANCELLED'}
 
         return {'RUNNING_MODAL'}
@@ -320,7 +328,7 @@ def placerBalise():
         nbPlacer+=1
 
 if __name__ == "__main__":
-    #createArmature((0,0,0), .1)
+    createArmature((0,0,0), .1)
     #bpy.ops.wm.mouse_position('INVOKE_DEFAULT')
     
     for area in bpy.context.screen.areas:
@@ -330,12 +338,13 @@ if __name__ == "__main__":
                     area3D = area
                     area3D.spaces[0].region_3d.view_perspective = 'ORTHO'
                     override = {'area': area, 'region': region, 'edit_object': bpy.context.edit_object}
-                    bpy.ops.view3d.viewnumpad(override, type = 'FRONT')
+                    bpy.ops.view3d.viewnumpad(override, type = 'RIGHT')
                     
     nbBalises = 7
     nbPlacer = 0;
     
     #placerBalise();
-    
-    bpy.ops.mesh.primitive_uv_sphere_add(size=1, location=(0, 0, 0))
+
     bpy.ops.object.modal_operator('INVOKE_DEFAULT')
+    
+    print
