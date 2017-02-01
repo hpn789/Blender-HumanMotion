@@ -43,7 +43,7 @@ class RIG_OT_generaterig(bpy.types.Operator):
     bl_label = "Generate rig"
  
     def execute(self, context):
-        createArmature((0,0,0), .1)
+        createArmature((0,0,0))
         return{'FINISHED'}    
  
 #    Registration
@@ -112,11 +112,27 @@ class ModalOperator(bpy.types.Operator):
 bpy.utils.register_class(ModalOperator)
 
 
-def createArmature(origin, coef):
+def createArmature(origin):
+    
+    feetLength=.3
+    gripDistance = .5
+    coef=.3
+    
+    balises = {}
+    
+    balises["topHead"] = bpy.data.objects["topHead"].location
+    balises["neckBase"] = bpy.data.objects["neckBase"].location
+    balises["pelvis"] = bpy.data.objects["pelvis"].location
+    balises["leftHand"] = bpy.data.objects["leftHand"].location
+    balises["rightHand"] = bpy.data.objects["rightHand"].location
+    balises["leftFeet"] = bpy.data.objects["leftFeet"].location
+    balises["rightFeet"] = bpy.data.objects["rightFeet"].location
+    
+    
     
     #bpy.ops.object.mode_set(mode='OBJECT')
-    bpy.ops.object.select_all(action='SELECT')
-    bpy.ops.object.delete(use_global=False)
+    bpy.ops.object.select_all(action='DESELECT')
+    #bpy.ops.object.delete(use_global=False)
     
     
     # Create armature and object
@@ -136,151 +152,191 @@ def createArmature(origin, coef):
  
     # Create bones
     
-    coefArticulation=.1*coef
+    coefArticulation=.01
     
     bpy.ops.object.editmode_toggle()
     
+    diffX=balises["neckBase"].x - balises["pelvis"].x
+    diffX/=3
+    diffY=balises["neckBase"].y - balises["pelvis"].y
+    diffY/=3
+    diffZ=balises["neckBase"].z - balises["pelvis"].z
+    diffZ/=3
+    
     spine1 = amt.edit_bones.new('spine1')
-    spine1.head = (0,0,8*coef)
-    spine1.tail = (-coefArticulation,0,10*coef)
+    spine1.head = (balises["pelvis"].x,balises["pelvis"].y,balises["pelvis"].z)
+    spine1.tail = (balises["pelvis"].x+diffX-coefArticulation,balises["pelvis"].y+diffY,balises["pelvis"].z+diffZ)
     
     spine2 = amt.edit_bones.new('spine2')
-    spine2.head = (-coefArticulation,0,10*coef)
-    spine2.tail = (-coefArticulation,0,12*coef)
+    spine2.head = spine1.tail
+    spine2.tail = (balises["pelvis"].x+diffX*2-coefArticulation,balises["pelvis"].y+diffY*2,balises["pelvis"].z+diffZ*2)
     spine2.use_connect = True
     spine2.parent = spine1
     
     spine3 = amt.edit_bones.new('spine3')
-    spine3.head = (-coefArticulation,0,12*coef)
-    spine3.tail = (0,0,14*coef)
+    spine3.head = spine2.tail
+    spine3.tail = (balises["neckBase"].x,balises["neckBase"].y,balises["neckBase"].z)
     spine3.use_connect = True
     spine3.parent = spine2
     
+    diffX=balises["topHead"].x - balises["neckBase"].x
+    diffX/=2
+    diffY=balises["topHead"].y - balises["neckBase"].y
+    diffY/=2
+    diffZ=balises["topHead"].z - balises["neckBase"].z
+    diffZ/=2
+    
     neck = amt.edit_bones.new('neck')
-    neck.head = (0,0,14*coef)
-    neck.tail = (0,0,15*coef)
+    neck.head = spine3.tail
+    neck.tail = (balises["neckBase"].x+diffX,balises["neckBase"].y+diffY,balises["neckBase"].z+diffZ)
     neck.use_connect = True
     neck.parent = spine3
     
     head = amt.edit_bones.new('head')
-    head.head = (0,0,15*coef)
-    head.tail = (0,0,17*coef)
+    head.head = neck.tail
+    head.tail = (balises["topHead"].x,balises["topHead"].y,balises["topHead"].z)
     head.use_connect = True
     head.parent = neck
     
+    nb=5
+    diffX=(balises["leftHand"].x - balises["neckBase"].x)/nb
+    diffY=(balises["leftHand"].y - balises["neckBase"].y)/nb
+    diffZ=(balises["leftHand"].z - balises["neckBase"].z)/nb
+    
     leftArm = amt.edit_bones.new('leftArm')
-    leftArm.head = (0,0,14*coef)
-    leftArm.tail = (-coefArticulation,-3*coef,14*coef)
+    leftArm.head = spine3.tail
+    leftArm.tail = (balises["neckBase"].x+diffX*2-coefArticulation,balises["neckBase"].y+diffY*2,balises["neckBase"].z+diffZ*2)
     leftArm.use_connect = True
     leftArm.parent = spine3
     
     leftForearm = amt.edit_bones.new('leftForearm')
-    leftForearm.head = (-coefArticulation,-3*coef,14*coef)
-    leftForearm.tail = (0,-6*coef,14*coef)
+    leftForearm.head = leftArm.tail
+    leftForearm.tail = (balises["neckBase"].x+diffX*4-coefArticulation,balises["neckBase"].y+diffY*4,balises["neckBase"].z+diffZ*4)
     leftForearm.use_connect = True
     leftForearm.parent = leftArm
     
     leftHand = amt.edit_bones.new('leftHand')
-    leftHand.head = (0,-6*coef,14*coef)
-    leftHand.tail = (0,-7*coef,14*coef)
+    leftHand.head = leftForearm.tail
+    leftHand.tail = (balises["leftHand"].x,balises["leftHand"].y,balises["leftHand"].z)
     leftHand.use_connect = True
     leftHand.parent = leftForearm
     
+    nb=5
+    diffX=(balises["rightHand"].x - balises["neckBase"].x)/nb
+    diffY=(balises["rightHand"].y - balises["neckBase"].y)/nb
+    diffZ=(balises["rightHand"].z - balises["neckBase"].z)/nb
+    
     rightArm = amt.edit_bones.new('rightArm')
-    rightArm.head = (0,0,14*coef)
-    rightArm.tail = (0,3*coef,14*coef)
+    rightArm.head = spine3.tail
+    rightArm.tail = (balises["neckBase"].x+diffX*2-coefArticulation,balises["neckBase"].y+diffY*2,balises["neckBase"].z+diffZ*2)
     rightArm.use_connect = True
     rightArm.parent = spine3
     
     rigthForearm = amt.edit_bones.new('rigthForearm')
-    rigthForearm.head = (0,3*coef,14*coef)
-    rigthForearm.tail = (0,6*coef,14*coef)
+    rigthForearm.head = rightArm.tail
+    rigthForearm.tail = (balises["neckBase"].x+diffX*4-coefArticulation,balises["neckBase"].y+diffY*4,balises["neckBase"].z+diffZ*4)
     rigthForearm.use_connect = True
     rigthForearm.parent = rightArm
     
     rightHand = amt.edit_bones.new('rightHand')
-    rightHand.head = (0,6*coef,14*coef)
-    rightHand.tail = (0,7*coef,14*coef)
+    rightHand.head = rigthForearm.tail
+    rightHand.tail = (balises["rightHand"].x,balises["rightHand"].y,balises["rightHand"].z)
     rightHand.use_connect = True
     rightHand.parent = rigthForearm
- 
+    
+    startX=balises["pelvis"].x
+    startY=balises["leftFeet"].y
+    startZ=balises["pelvis"].z
+    nb=8.5
+    diffX=(balises["leftFeet"].x - startX)/nb
+    diffY=(balises["leftFeet"].y - startY)/nb
+    diffZ=(balises["leftFeet"].z - startZ)/nb
+    
     leftThigh = amt.edit_bones.new('leftThigh')
-    leftThigh.head = (0,-1.5*coef,8*coef)
-    leftThigh.tail = (coefArticulation,-1.5*coef,4*coef)
+    leftThigh.head = (startX,startY, startZ)
+    leftThigh.tail = (startX+diffX*4+coefArticulation,startY+diffY*4, startZ+diffZ*4)
     leftThigh.parent = spine1
     
     leftLeg = amt.edit_bones.new('leftLeg')
-    leftLeg.head = (coefArticulation,-1.5*coef,4*coef)
-    leftLeg.tail = (0,-1.5*coef,0.5*coef)
+    leftLeg.head = leftThigh.tail
+    leftLeg.tail = (startX+diffX*8+coefArticulation,startY+diffY*8, startZ+diffZ*8)
     leftLeg.use_connect = True
     leftLeg.parent = leftThigh
     
     leftFeet = amt.edit_bones.new('leftFeet')
-    leftFeet.head = (0,-1.5*coef,0.5*coef)
-    leftFeet.tail = (2*coef,-1.5*coef,0)
+    leftFeet.head = leftLeg.tail
+    leftFeet.tail = (feetLength,balises["leftFeet"].y,balises["leftFeet"].z)
     leftFeet.use_connect = True
     leftFeet.parent = leftLeg
- 
+    
+    startX=balises["pelvis"].x
+    startY=balises["rightFeet"].y
+    startZ=balises["pelvis"].z
+    nb=8.5
+    diffX=(balises["rightFeet"].x - startX)/nb
+    diffY=(balises["rightFeet"].y - startY)/nb
+    diffZ=(balises["rightFeet"].z - startZ)/nb
+    
     rightThigh = amt.edit_bones.new('rightThigh')
-    rightThigh.head = (0,1.5*coef,8*coef)
-    rightThigh.tail = (coefArticulation,1.5*coef,4*coef)
+    rightThigh.head = (startX,startY, startZ)
+    rightThigh.tail = (startX+diffX*4+coefArticulation,startY+diffY*4, startZ+diffZ*4)
     rightThigh.parent = spine1
     
     rightLeg = amt.edit_bones.new('rightLeg')
-    rightLeg.head = (coefArticulation,1.5*coef,4*coef)
-    rightLeg.tail = (0,1.5*coef,0.5*coef)
+    rightLeg.head = rightThigh.tail
+    rightLeg.tail = (startX+diffX*8+coefArticulation,startY+diffY*8, startZ+diffZ*8)
     rightLeg.use_connect = True
     rightLeg.parent = rightThigh
     
     rightFeet = amt.edit_bones.new('rightFeet')
-    rightFeet.head = (0,1.5*coef,0.5*coef)
-    rightFeet.tail = (2*coef,1.5*coef,0)
+    rightFeet.head = rightLeg.tail
+    rightFeet.tail = (feetLength,balises["rightFeet"].y,balises["rightFeet"].z)
     rightFeet.use_connect = True
     rightFeet.parent = rightLeg
     
     rightLegIK = amt.edit_bones.new('rightLegIK')
-    rightLegIK.head = (0,1.5*coef,0.5*coef)
-    rightLegIK.tail = (-1.5*coef,1.5*coef,0.5*coef)
+    rightLegIK.head = rightFeet.head
+    rightLegIK.tail = (rightLegIK.head.x-coef,rightLegIK.head.y,rightLegIK.head.z)
     rightLegIK.use_deform = False
     
     leftLegIK = amt.edit_bones.new('leftLegIK')
-    leftLegIK.head = (0,-1.5*coef,0.5*coef)
-    leftLegIK.tail = (-1.5*coef,-1.5*coef,0.5*coef)
+    leftLegIK.head = leftFeet.head
+    leftLegIK.tail = (leftLegIK.head.x-coef,leftLegIK.head.y,leftLegIK.head.z)
     leftLegIK.use_deform = False
     
     rightKneeIK = amt.edit_bones.new('rightKneeIK')
-    rightKneeIK.head = (7*coef,1.5*coef,4*coef)
-    rightKneeIK.tail = (7*coef,1.5*coef,7*coef)
+    rightKneeIK.head = (rightLeg.head.x+gripDistance,rightLeg.head.y,rightLeg.head.z)
+    rightKneeIK.tail = (rightKneeIK.head.x ,rightKneeIK.head.y ,rightKneeIK.head.z+coef)
     rightKneeIK.use_deform = False
     
     leftKneeIK = amt.edit_bones.new('leftKneeIK')
-    leftKneeIK.head = (7*coef,-1.5*coef,4*coef)
-    leftKneeIK.tail = (7*coef,-1.5*coef,7*coef)
+    leftKneeIK.head = (leftLeg.head.x+gripDistance,leftLeg.head.y,leftLeg.head.z)
+    leftKneeIK.tail = (leftKneeIK.head.x ,leftKneeIK.head.y ,leftKneeIK.head.z+coef)
     leftKneeIK.use_deform = False
     
     rightElbowIK = amt.edit_bones.new('rightElbowIK')
-    rightElbowIK.head = (7*coef,3*coef,14*coef)
-    rightElbowIK.tail = (7*coef,3*coef,17*coef)
+    rightElbowIK.head = (rightArm.tail.x+gripDistance,rightArm.tail.y,rightArm.tail.z)
+    rightElbowIK.tail = (rightElbowIK.head.x ,rightElbowIK.head.y ,rightElbowIK.head.z+coef)
     rightElbowIK.use_deform = False
     
     leftElbowIK = amt.edit_bones.new('leftElbowIK')
-    leftElbowIK.head = (7*coef,-3*coef,14*coef)
-    leftElbowIK.tail = (7*coef,-3*coef,17*coef)
+    leftElbowIK.head = (leftArm.tail.x+gripDistance,leftArm.tail.y,leftArm.tail.z)
+    leftElbowIK.tail = (leftElbowIK.head.x ,leftElbowIK.head.y ,leftElbowIK.head.z+coef)
     leftElbowIK.use_deform = False
     
     rightArmIK = amt.edit_bones.new('rightArmIK')
-    rightArmIK.head = (0,7*coef,14*coef)
-    rightArmIK.tail = (-1*coef,7*coef,14*coef)
+    rightArmIK.head = rightHand.tail
+    rightArmIK.tail = (rightArmIK.head.x-coef,rightArmIK.head.y,rightArmIK.head.z)
     rightArmIK.use_deform = False
     
     leftArmIK = amt.edit_bones.new('leftArmIK')
-    leftArmIK.head = (0,-7*coef,14*coef)
-    leftArmIK.tail = (-1*coef,-7*coef,14*coef)
+    leftArmIK.head = leftHand.tail
+    leftArmIK.tail = (leftArmIK.head.x-coef,leftArmIK.head.y,leftArmIK.head.z)
     leftArmIK.use_deform = False
     
     control = amt.edit_bones.new('control')
-    control.head = (0,0,0)
-    control.tail = (8*coef,0,0)
+    control.head = (0,balises["pelvis"].y,0)
+    control.tail = (2*coef,balises["pelvis"].y,0)
     control.use_deform = False
     
     bpy.ops.armature.select_all(action='DESELECT')
