@@ -1,4 +1,61 @@
 import bpy
+from bpy_extras import view3d_utils
+
+area3D = None
+
+nbBalises = None
+nbPlacer = None
+
+class ModalOperator(bpy.types.Operator):
+    bl_idname = "object.modal_operator"
+    bl_label = "Simple Modal Operator"
+
+    def __init__(self):
+        print("Start")
+
+    def __del__(self):
+        #placerBalise()
+        print("End")
+
+    def execute(self, context):
+        
+        
+        for area in bpy.context.screen.areas:
+            if area.type == 'VIEW_3D':
+                for region in area.regions:
+                    if region.type == 'WINDOW':
+                        override = {'area': area, 'region': region, 'edit_object': bpy.context.edit_object}
+                        event = self.event
+                        rv3d = area.spaces[0].region_3d
+                        coord = event.mouse_region_x-region.x, event.mouse_region_y
+
+                        # get the ray from the viewport and mouse
+                        ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
+                        context.object.location.x = ray_origin.x
+                        context.object.location.z = ray_origin.z
+        
+
+    def modal(self, context, event):
+        if event.type == 'MOUSEMOVE':  # Apply
+            self.event = event
+            self.execute(context)
+        elif event.type == 'LEFTMOUSE':  # Confirm
+            return {'FINISHED'}
+        elif event.type in ('RIGHTMOUSE', 'ESC'):  # Cancel
+            return {'CANCELLED'}
+
+        return {'RUNNING_MODAL'}
+
+    def invoke(self, context, event):
+        self.event = event
+        self.execute(context)
+
+        print(context.window_manager.modal_handler_add(self))
+        return {'RUNNING_MODAL'}
+
+
+bpy.utils.register_class(ModalOperator)
+
 
 def createArmature(origin, coef):
     
@@ -256,5 +313,29 @@ def createArmature(origin, coef):
     bpy.ops.object.mode_set(mode='OBJECT')
     return rig
 
+def placerBalise():
+    if nbPlacer < nbBalise:
+        bpy.ops.mesh.primitive_uv_sphere_add(size=1, location=(0, 0, 0))
+        bpy.ops.object.modal_operator('INVOKE_DEFAULT')
+        nbPlacer+=1
+
 if __name__ == "__main__":
-    createArmature((0,0,0), .1)
+    #createArmature((0,0,0), .1)
+    #bpy.ops.wm.mouse_position('INVOKE_DEFAULT')
+    
+    for area in bpy.context.screen.areas:
+        if area.type == 'VIEW_3D':
+            for region in area.regions:
+                if region.type == 'WINDOW':
+                    area3D = area
+                    area3D.spaces[0].region_3d.view_perspective = 'ORTHO'
+                    override = {'area': area, 'region': region, 'edit_object': bpy.context.edit_object}
+                    bpy.ops.view3d.viewnumpad(override, type = 'FRONT')
+                    
+    nbBalises = 7
+    nbPlacer = 0;
+    
+    #placerBalise();
+    
+    bpy.ops.mesh.primitive_uv_sphere_add(size=1, location=(0, 0, 0))
+    bpy.ops.object.modal_operator('INVOKE_DEFAULT')
