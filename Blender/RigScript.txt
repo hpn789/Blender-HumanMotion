@@ -135,7 +135,7 @@ class ModalOperator(bpy.types.Operator):
     nbBalises = 7
     nbPlacer = 0
     
-    names = ["topHead", "neckBase", "pelvis", "leftHand", "rightHand", "leftFeet", "rightFeet"]
+    names = ["topHead", "neckBase", "pelvis", "leftHand", "rightHand", "leftFoot", "rightFoot"]
     
     def placerRepere(self):
         bpy.ops.mesh.primitive_uv_sphere_add(size=.1, location=(0, 0, 0))
@@ -207,8 +207,8 @@ def createArmature(origin):
     balises["pelvis"] = bpy.data.objects["pelvis"].location
     balises["leftHand"] = bpy.data.objects["leftHand"].location
     balises["rightHand"] = bpy.data.objects["rightHand"].location
-    balises["leftFeet"] = bpy.data.objects["leftFeet"].location
-    balises["rightFeet"] = bpy.data.objects["rightFeet"].location
+    balises["leftFoot"] = bpy.data.objects["leftFoot"].location
+    balises["rightFoot"] = bpy.data.objects["rightFoot"].location
     
     #bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.select_all(action='DESELECT')
@@ -243,21 +243,21 @@ def createArmature(origin):
     diffZ=balises["neckBase"].z - balises["pelvis"].z
     diffZ/=3
     
-    spine1 = amt.edit_bones.new('spine1')
-    spine1.head = (balises["pelvis"].x,balises["pelvis"].y,balises["pelvis"].z)
-    spine1.tail = (balises["pelvis"].x+diffX-coefArticulation,balises["pelvis"].y+diffY,balises["pelvis"].z+diffZ)
+    hips = amt.edit_bones.new('hips')
+    hips.head = (balises["pelvis"].x,balises["pelvis"].y,balises["pelvis"].z)
+    hips.tail = (balises["pelvis"].x+diffX-coefArticulation,balises["pelvis"].y+diffY,balises["pelvis"].z+diffZ)
     
-    spine2 = amt.edit_bones.new('spine2')
-    spine2.head = spine1.tail
-    spine2.tail = (balises["pelvis"].x+diffX*2-coefArticulation,balises["pelvis"].y+diffY*2,balises["pelvis"].z+diffZ*2)
-    spine2.use_connect = True
-    spine2.parent = spine1
+    lowerBack = amt.edit_bones.new('lowerBack')
+    lowerBack.head = hips.tail
+    lowerBack.tail = (balises["pelvis"].x+diffX*2-coefArticulation,balises["pelvis"].y+diffY*2,balises["pelvis"].z+diffZ*2)
+    lowerBack.use_connect = True
+    lowerBack.parent = hips
     
-    spine3 = amt.edit_bones.new('spine3')
-    spine3.head = spine2.tail
-    spine3.tail = (balises["neckBase"].x,balises["neckBase"].y,balises["neckBase"].z)
-    spine3.use_connect = True
-    spine3.parent = spine2
+    spine = amt.edit_bones.new('spine')
+    spine.head = lowerBack.tail
+    spine.tail = (balises["neckBase"].x,balises["neckBase"].y,balises["neckBase"].z)
+    spine.use_connect = True
+    spine.parent = lowerBack
     
     diffX=balises["topHead"].x - balises["neckBase"].x
     diffX/=2
@@ -267,10 +267,10 @@ def createArmature(origin):
     diffZ/=2
     
     neck = amt.edit_bones.new('neck')
-    neck.head = spine3.tail
+    neck.head = spine.tail
     neck.tail = (balises["neckBase"].x+diffX,balises["neckBase"].y+diffY,balises["neckBase"].z+diffZ)
     neck.use_connect = True
-    neck.parent = spine3
+    neck.parent = spine
     
     head = amt.edit_bones.new('head')
     head.head = neck.tail
@@ -284,11 +284,11 @@ def createArmature(origin):
     diffZ=(balises["leftHand"].z - balises["neckBase"].z)/nb
     
     leftArm = amt.edit_bones.new('leftArm')
-    leftArm.head = spine3.tail
+    leftArm.head = spine.tail
     print(balises["neckBase"].x+diffX*2-coefArticulation)
     leftArm.tail = (balises["neckBase"].x+diffX*2-coefArticulation,balises["neckBase"].y+diffY*2,balises["neckBase"].z+diffZ*2)
     leftArm.use_connect = True
-    leftArm.parent = spine3
+    leftArm.parent = spine
     
     leftForearm = amt.edit_bones.new('leftForearm')
     leftForearm.head = leftArm.tail
@@ -308,11 +308,11 @@ def createArmature(origin):
     diffZ=(balises["rightHand"].z - balises["neckBase"].z)/nb
     
     rightArm = amt.edit_bones.new('rightArm')
-    rightArm.head = spine3.tail
+    rightArm.head = spine.tail
     print(balises["neckBase"].x+diffX*2-coefArticulation)
     rightArm.tail = (balises["neckBase"].x+diffX*2-coefArticulation,balises["neckBase"].y+diffY*2,balises["neckBase"].z+diffZ*2)
     rightArm.use_connect = True
-    rightArm.parent = spine3
+    rightArm.parent = spine
     
     rigthForearm = amt.edit_bones.new('rigthForearm')
     rigthForearm.head = rightArm.tail
@@ -327,62 +327,62 @@ def createArmature(origin):
     rightHand.parent = rigthForearm
     
     startX=balises["pelvis"].x
-    startY=balises["leftFeet"].y
+    startY=balises["leftFoot"].y
     startZ=balises["pelvis"].z
     nb=8
-    diffX=(balises["leftFeet"].x - startX)/nb
-    diffY=(balises["leftFeet"].y - startY)/nb
-    diffZ=(balises["leftFeet"].z - startZ)/nb
+    diffX=(balises["leftFoot"].x - startX)/nb
+    diffY=(balises["leftFoot"].y - startY)/nb
+    diffZ=(balises["leftFoot"].z - startZ)/nb
     
-    leftThigh = amt.edit_bones.new('leftThigh')
-    leftThigh.head = (startX,startY, startZ)
-    leftThigh.tail = (startX+diffX*4+coefArticulation,startY+diffY*4, startZ+diffZ*4)
-    leftThigh.parent = spine1
+    leftUpLeg = amt.edit_bones.new('leftUpLeg')
+    leftUpLeg.head = (startX,startY, startZ)
+    leftUpLeg.tail = (startX+diffX*4+coefArticulation,startY+diffY*4, startZ+diffZ*4)
+    leftUpLeg.parent = hips
     
     leftLeg = amt.edit_bones.new('leftLeg')
-    leftLeg.head = leftThigh.tail
+    leftLeg.head = leftUpLeg.tail
     leftLeg.tail = (startX+diffX*8+coefArticulation,startY+diffY*8, startZ+diffZ*8)
     leftLeg.use_connect = True
-    leftLeg.parent = leftThigh
+    leftLeg.parent = leftUpLeg
     
-    leftFeet = amt.edit_bones.new('leftFeet')
-    leftFeet.head = leftLeg.tail
-    leftFeet.tail = (feetLength,balises["leftFeet"].y,balises["leftFeet"].z)
-    leftFeet.use_connect = True
-    leftFeet.parent = leftLeg
+    leftFoot = amt.edit_bones.new('leftFoot')
+    leftFoot.head = leftLeg.tail
+    leftFoot.tail = (feetLength,balises["leftFoot"].y,balises["leftFoot"].z)
+    leftFoot.use_connect = True
+    leftFoot.parent = leftLeg
     
     startX=balises["pelvis"].x
-    startY=balises["rightFeet"].y
+    startY=balises["rightFoot"].y
     startZ=balises["pelvis"].z
     nb=8
-    diffX=(balises["rightFeet"].x - startX)/nb
-    diffY=(balises["rightFeet"].y - startY)/nb
-    diffZ=(balises["rightFeet"].z - startZ)/nb
+    diffX=(balises["rightFoot"].x - startX)/nb
+    diffY=(balises["rightFoot"].y - startY)/nb
+    diffZ=(balises["rightFoot"].z - startZ)/nb
     
-    rightThigh = amt.edit_bones.new('rightThigh')
-    rightThigh.head = (startX,startY, startZ)
-    rightThigh.tail = (startX+diffX*4+coefArticulation,startY+diffY*4, startZ+diffZ*4)
-    rightThigh.parent = spine1
+    rightUpLeg = amt.edit_bones.new('rightUpLeg')
+    rightUpLeg.head = (startX,startY, startZ)
+    rightUpLeg.tail = (startX+diffX*4+coefArticulation,startY+diffY*4, startZ+diffZ*4)
+    rightUpLeg.parent = hips
     
     rightLeg = amt.edit_bones.new('rightLeg')
-    rightLeg.head = rightThigh.tail
+    rightLeg.head = rightUpLeg.tail
     rightLeg.tail = (startX+diffX*8+coefArticulation,startY+diffY*8, startZ+diffZ*8)
     rightLeg.use_connect = True
-    rightLeg.parent = rightThigh
+    rightLeg.parent = rightUpLeg
     
-    rightFeet = amt.edit_bones.new('rightFeet')
-    rightFeet.head = rightLeg.tail
-    rightFeet.tail = (feetLength,balises["rightFeet"].y,balises["rightFeet"].z)
-    rightFeet.use_connect = True
-    rightFeet.parent = rightLeg
+    rightFoot = amt.edit_bones.new('rightFoot')
+    rightFoot.head = rightLeg.tail
+    rightFoot.tail = (feetLength,balises["rightFoot"].y,balises["rightFoot"].z)
+    rightFoot.use_connect = True
+    rightFoot.parent = rightLeg
     
     rightLegIK = amt.edit_bones.new('rightLegIK')
-    rightLegIK.head = rightFeet.head
+    rightLegIK.head = rightFoot.head
     rightLegIK.tail = (rightLegIK.head.x-coef,rightLegIK.head.y,rightLegIK.head.z)
     rightLegIK.use_deform = False
     
     leftLegIK = amt.edit_bones.new('leftLegIK')
-    leftLegIK.head = leftFeet.head
+    leftLegIK.head = leftFoot.head
     leftLegIK.tail = (leftLegIK.head.x-coef,leftLegIK.head.y,leftLegIK.head.z)
     leftLegIK.use_deform = False
     
@@ -422,7 +422,7 @@ def createArmature(origin):
     headIK.use_deform = False
     
     firstControl = amt.edit_bones.new('firstControl')
-    firstControl.head = (spine1.tail.x+gripDistance,spine1.tail.y,spine1.tail.z)
+    firstControl.head = (hips.tail.x+gripDistance,hips.tail.y,hips.tail.z)
     firstControl.tail = (firstControl.head.x ,firstControl.head.y ,firstControl.head.z+coef)
     firstControl.use_deform = False
     
@@ -439,7 +439,7 @@ def createArmature(origin):
     leftKneeIK.select = True;
     rightElbowIK.select = True;
     leftElbowIK.select = True;
-    spine1.select = True;
+    hips.select = True;
     amt.edit_bones.active=firstControl;
     bpy.ops.armature.parent_set(type='OFFSET')
     
@@ -451,12 +451,12 @@ def createArmature(origin):
     bpy.ops.armature.parent_set(type='OFFSET')
     
     """bpy.ops.armature.select_all(action='DESELECT')
-    rightFeet.select = True;
+    rightFoot.select = True;
     amt.edit_bones.active=rightLegIK;
     bpy.ops.armature.parent_set(type='OFFSET')
     
     bpy.ops.armature.select_all(action='DESELECT')
-    leftFeet.select = True;
+    leftFoot.select = True;
     amt.edit_bones.active=leftLegIK;
     bpy.ops.armature.parent_set(type='OFFSET')"""
     
@@ -508,9 +508,9 @@ def createArmature(origin):
     cons.pole_subtarget = "rightKneeIK"
     
     bpy.ops.pose.select_all(action='DESELECT')
-    bpy.context.object.data.bones.active = bpy.context.object.data.bones['rightFeet']
+    bpy.context.object.data.bones.active = bpy.context.object.data.bones['rightFoot']
     bpy.ops.pose.constraint_add(type='COPY_ROTATION')
-    cons = bpy.context.object.pose.bones["rightFeet"].constraints["Copy Rotation"]
+    cons = bpy.context.object.pose.bones["rightFoot"].constraints["Copy Rotation"]
     cons.target = bpy.data.objects["rig"]
     cons.subtarget = "rightLegIK"
     cons.invert_x = True
@@ -520,9 +520,9 @@ def createArmature(origin):
     cons.owner_space = 'LOCAL'
     
     bpy.ops.pose.select_all(action='DESELECT')
-    bpy.context.object.data.bones.active = bpy.context.object.data.bones['leftFeet']
+    bpy.context.object.data.bones.active = bpy.context.object.data.bones['leftFoot']
     bpy.ops.pose.constraint_add(type='COPY_ROTATION')
-    cons = bpy.context.object.pose.bones["leftFeet"].constraints["Copy Rotation"]
+    cons = bpy.context.object.pose.bones["leftFoot"].constraints["Copy Rotation"]
     cons.target = bpy.data.objects["rig"]
     cons.subtarget = "leftLegIK"
     cons.invert_x = True
@@ -587,8 +587,8 @@ def deleteBalises():
     bpy.data.objects["pelvis"].select=True
     bpy.data.objects["leftHand"].select=True
     bpy.data.objects["rightHand"].select=True
-    bpy.data.objects["leftFeet"].select=True
-    bpy.data.objects["rightFeet"].select=True
+    bpy.data.objects["leftFoot"].select=True
+    bpy.data.objects["rightFoot"].select=True
     bpy.ops.object.delete(use_global=False)
     
     
@@ -607,6 +607,6 @@ if __name__ == "__main__":
     balises["pelvis"] = bpy.data.objects["pelvis"].location
     balises["leftHand"] = bpy.data.objects["leftHand"].location
     balises["rightHand"] = bpy.data.objects["rightHand"].location
-    balises["leftFeet"] = bpy.data.objects["leftFeet"].location
-    balises["rightFeet"] = bpy.data.objects["rightFeet"].location
+    balises["leftFoot"] = bpy.data.objects["leftFoot"].location
+    balises["rightFoot"] = bpy.data.objects["rightFoot"].location
     print"""
