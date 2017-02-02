@@ -1,5 +1,46 @@
 import bpy
 from bpy_extras import view3d_utils
+from bpy.props import (StringProperty,
+                       BoolProperty,
+                       IntProperty,
+                       FloatProperty,
+                       EnumProperty,
+                       PointerProperty,
+                       )
+from bpy.types import (Panel,
+                       Operator,
+                       PropertyGroup,
+                       )
+        
+
+class MySettings(PropertyGroup):
+
+    sizeGrip = FloatProperty(
+        name = "Grip size",
+        description="A float property",
+        default = .3,
+        min = 0,
+        max = 1000
+        )
+        
+    gripDistance = FloatProperty(
+        name = "Grip distance",
+        description="A float property",
+        default = .5,
+        min = 0,
+        max = 1000
+        )
+    
+    feetLength = FloatProperty(
+        name = "Feet lenght",
+        description="A float property",
+        default = .3,
+        min = 0,
+        max = 1000
+        )
+        
+bpy.utils.register_module(__name__)
+bpy.types.Scene.my_tool = PointerProperty(type=MySettings)
 
 class CustomPanel(bpy.types.Panel):
     
@@ -9,9 +50,27 @@ class CustomPanel(bpy.types.Panel):
 
     def draw(self, context):
         
+        layout = self.layout
+        
+        scene = context.scene
+        mytool = scene.my_tool
+        
         self.layout.operator("rig.positionview")
         self.layout.operator("rig.placebalise")
         self.layout.operator("rig.generaterig")
+        self.layout.operator("rig.deletebalises")
+        self.layout.operator("rig.link")
+        
+        obj = context.object
+        if obj!=None:
+            row = layout.row()
+            row.prop(obj, "name")
+        
+        layout.prop(mytool, "sizeGrip")
+        layout.prop(mytool, "gripDistance")
+        layout.prop(mytool, "feetLength")
+        
+        
 
 
 bpy.utils.register_class(CustomPanel)
@@ -23,9 +82,29 @@ class RIG_OT_positionview(bpy.types.Operator):
     def execute(self, context):
         positionView()
         return{'FINISHED'}    
+
+bpy.utils.register_class(RIG_OT_positionview)
+
+class RIG_OT_link(bpy.types.Operator):
+    bl_idname = "rig.link"
+    bl_label = "Link"
+ 
+    def execute(self, context):
+        link()
+        return{'FINISHED'}    
+
+bpy.utils.register_class(RIG_OT_link)
+
+class RIG_OT_deletebalises(bpy.types.Operator):
+    bl_idname = "rig.deletebalises"
+    bl_label = "Delete balises"
+ 
+    def execute(self, context):
+        deleteBalises()
+        return{'FINISHED'}    
  
 #    Registration
-bpy.utils.register_class(RIG_OT_positionview)
+bpy.utils.register_class(RIG_OT_deletebalises)
 
 class RIG_OT_placebalise(bpy.types.Operator):
     bl_idname = "rig.placebalise"
@@ -114,9 +193,12 @@ bpy.utils.register_class(ModalOperator)
 
 def createArmature(origin):
     
-    feetLength=.3
-    gripDistance = .5
-    coef=.3
+    scene = bpy.context.scene
+    mytool = scene.my_tool
+    
+    feetLength=mytool.feetLength
+    gripDistance = mytool.gripDistance
+    coef=mytool.sizeGrip
     
     balises = {}
     
@@ -127,8 +209,6 @@ def createArmature(origin):
     balises["rightHand"] = bpy.data.objects["rightHand"].location
     balises["leftFeet"] = bpy.data.objects["leftFeet"].location
     balises["rightFeet"] = bpy.data.objects["rightFeet"].location
-    
-    
     
     #bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.select_all(action='DESELECT')
@@ -152,7 +232,7 @@ def createArmature(origin):
  
     # Create bones
     
-    coefArticulation=.01
+    coefArticulation=.1
     
     bpy.ops.object.editmode_toggle()
     
@@ -205,6 +285,7 @@ def createArmature(origin):
     
     leftArm = amt.edit_bones.new('leftArm')
     leftArm.head = spine3.tail
+    print(balises["neckBase"].x+diffX*2-coefArticulation)
     leftArm.tail = (balises["neckBase"].x+diffX*2-coefArticulation,balises["neckBase"].y+diffY*2,balises["neckBase"].z+diffZ*2)
     leftArm.use_connect = True
     leftArm.parent = spine3
@@ -228,6 +309,7 @@ def createArmature(origin):
     
     rightArm = amt.edit_bones.new('rightArm')
     rightArm.head = spine3.tail
+    print(balises["neckBase"].x+diffX*2-coefArticulation)
     rightArm.tail = (balises["neckBase"].x+diffX*2-coefArticulation,balises["neckBase"].y+diffY*2,balises["neckBase"].z+diffZ*2)
     rightArm.use_connect = True
     rightArm.parent = spine3
@@ -334,6 +416,7 @@ def createArmature(origin):
     leftArmIK.tail = (leftArmIK.head.x-coef,leftArmIK.head.y,leftArmIK.head.z)
     leftArmIK.use_deform = False
     
+    
     control = amt.edit_bones.new('control')
     control.head = (0,balises["pelvis"].y,0)
     control.tail = (2*coef,balises["pelvis"].y,0)
@@ -372,6 +455,8 @@ def createArmature(origin):
     cons.chain_count=3
     cons.pole_target=bpy.data.objects["rig"]
     cons.pole_subtarget = "leftElbowIK"
+    #cons.pole_angle = 3.14159
+
     
     bpy.ops.pose.select_all(action='DESELECT')
     bpy.context.object.pose.bones['rightArmIK'].bone.select = True
@@ -422,6 +507,11 @@ def createArmature(origin):
     bpy.context.object.pose.bones["leftElbowIK"].custom_shape = bpy.data.objects["MySphere"]
 
     bpy.ops.object.mode_set(mode='OBJECT')
+    
+    
+    bpy.ops.object.parent_set(type='ARMATURE_AUTO')
+    
+    
     return rig
 
 def placerBalise():
@@ -443,8 +533,33 @@ def positionView():
                     override = {'area': area, 'region': region, 'edit_object': bpy.context.edit_object}
                     bpy.ops.view3d.viewnumpad(override, type = 'RIGHT')
                     
+def deleteBalises():
+    bpy.ops.object.select_all(action='DESELECT')
+    bpy.data.objects["topHead"].select=True
+    bpy.data.objects["neckBase"].select=True
+    bpy.data.objects["pelvis"].select=True
+    bpy.data.objects["leftHand"].select=True
+    bpy.data.objects["rightHand"].select=True
+    bpy.data.objects["leftFeet"].select=True
+    bpy.data.objects["rightFeet"].select=True
+    bpy.ops.object.delete(use_global=False)
+    
+    
+def link():
+    bpy.context.scene.objects.active=bpy.data.objects["rig"]
+    bpy.ops.object.parent_set(type='ARMATURE_AUTO')
+                    
 
 if __name__ == "__main__":
     #bpy.ops.wm.mouse_position('INVOKE_DEFAULT')
+    balises = {}
     
-    print
+    
+    
+    """balises["neckBase"] = bpy.data.objects["neckBase"].location
+    balises["pelvis"] = bpy.data.objects["pelvis"].location
+    balises["leftHand"] = bpy.data.objects["leftHand"].location
+    balises["rightHand"] = bpy.data.objects["rightHand"].location
+    balises["leftFeet"] = bpy.data.objects["leftFeet"].location
+    balises["rightFeet"] = bpy.data.objects["rightFeet"].location
+    print"""
