@@ -1,7 +1,14 @@
 import bpy
+from math import radians
 
 offsetBones = {}
 nameBones = []
+locationBonesBVH = {}
+rotationBonesBVH = {}
+tabLocationFrameBVH = {}
+tabRotationFrameBVH = {}
+nameBonesRig = ["leftHand", "leftForearm", "leftArm", "head", "neck", "rightHand", "rightForearm", "rightArm", "spine3", "spine2", "spine2", "spine1", "leftThigh", "leftLeg", "leftFeet", "rightThigh", "rightLeg", "rightFeet"]
+nbFrame = 0
 
 def retrieveAllNameBones(content):
     
@@ -23,29 +30,132 @@ def retrieveAllNameBones(content):
             
         nameBones.append(nameBone)
         content = content[content.find("{") + 1 : ]
+        
+def numberFrame(content):
+    #print(content)
+    if content.find("Frames") == -1:
+        return 200
+    pos = content.find("Frames:") + 8
+    posF = content.find("Frame", pos)
+    nb = content[:posF]
+    #print(nb)
+    return nb
     
 def parsingBVH(fileName):
     myFile = open(fileName)
     fileContent = myFile.read()
-    
+    scene = bpy.context.scene
     # Pour gérer la casse on met tout en minuscule
     fileContent = fileContent.lower()
     
     # On recupère le nom de tous les bones du BVH
     retrieveAllNameBones(fileContent)
     
-    # On récupère les position offset de tous les bones
-    # Hips
-    posDebHips = fileContent.find("hips") + 4
-    fileContent = fileContent[posDebHips:]
-    posDebOffsetHips = fileContent.find("offset") + 7
-    posEndOffsetHips = fileContent.find("channels") - 2
-    posOffsetHips = fileContent[posDebOffsetHips : posEndOffsetHips]
-    offsetBones["hips"] = posOffsetHips
+    # On récupère le nobre de frame du BVH
+    nbFrame = 500 #numberFrame(fileContent)
+   
+    #bpy.context.scene.tool_settings.use_keyframe_insert_auto = True
     
+    # Traitement KeyFrame
+    ob = bpy.context.object
+    incr = 0
+    
+    if ob.type == 'ARMATURE':
+        armature = ob.data
+
+    for frame in range(0, int(nbFrame)):
+        scene.frame_set(frame)
+        for bone in armature.bones:
+            #print(bone.name)
+            bpy.ops.object.mode_set(mode='POSE')
+            pbone = ob.pose.bones[bone.name]
+            # Set rotation mode to Euler XYZ, easier to understand
+            pbone.rotation_mode = 'XYZ'
+            locationBonesBVH[bone.name.lower()] = pbone.location
+            rotationBonesBVH[bone.name.lower()] = pbone.matrix
+            # select axis in ['X','Y','Z']  <--bone local
+            axis = 'Z'
+            angle = 50
+            #pbone.rotation_euler.rotate_axis(axis, radians(angle))
+            bpy.ops.object.mode_set(mode='OBJECT')
+            #insert a keyframe
+            pbone.keyframe_insert(data_path="rotation_euler" ,frame = frame)
+        tabLocationFrameBVH[frame] = locationBonesBVH
+        tabRotationFrameBVH[frame] = rotationBonesBVH
+    #bpy.context.scene.tool_settings.use_keyframe_insert_auto = False
+
+def analogyzeBoneNames(boneName):
+    boneName = boneName.lower()
+    if boneName.find("head") != -1:
+        return "head"
+    elif boneName.find("neck") != -1:
+        return "neck"
+    elif boneName.find("spine") != -1:
+        return "spine"
+    elif boneName.find("lowerback") != -1 or boneName.find("back") != -1:
+        return "lowerback"
+    elif boneName.find("hips") != -1:
+        return "hips"
+    elif boneName.find("forearm") != -1 and (boneName.find("l") != -1 or boneName.find("left") != -1):
+        return "leftforearm"
+    elif boneName.find("arm") != -1 and (boneName.find("l") != -1 or boneName.find("left") != -1):
+        return "leftarm"
+    elif ((boneName.find("up") != -1 and boneName.find("leg")) or (boneName.find("thigh") != -1)) and (boneName.find("left") != -1 or boneName.find("l") != -1):
+        return "leftupleg"
+    elif boneName.find("leg") != -1 and (boneName.find("left") != -1 or boneName.find("l")):
+        return "leftleg"
+    elif boneName.find("foot") != -1 and (boneName.find("left") or boneName.find("l")):
+        return "leftfoot"
+    elif boneName.find("hand") != -1 and (boneName.find("left") or boneName.find("l")):
+        return "lefthand"
+    elif boneName.find("forearm") != -1 and (boneName.find("r") != -1 or boneName.find("right") != -1):
+        return "rightforearm"
+    elif boneName.find("arm") != -1 and (boneName.find("r") != -1 or boneName.find("right") != -1):
+        return "rightarm"
+    elif ((boneName.find("up") != -1 and boneName.find("leg")) or (boneName.find("thigh") != -1)) and (boneName.find("right") != -1 or boneName.find("r") != -1):
+        return "rightupleg"
+    elif boneName.find("leg") != -1 and (boneName.find("right") != -1 or boneName.find("r")):
+        return "rightleg"
+    elif boneName.find("foot") != -1 and (boneName.find("right") or boneName.find("r")):
+        return "rightfoot"
+    elif boneName.find("hand") != -1 and (boneName.find("right") or boneName.find("r")):
+        return "righthand"
+    else:
+        return "null"
+    
+def applyTransformation(fileName):
+    ob = bpy.data.objects['rig']
+    bpy.context.scene.objects.active = ob
+    myFile = open(fileName)
+    fileContent = myFile.read()
+    nbFrame = 500 #numberFrame(fileContent)
+    if ob.type == 'ARMATURE':
+        armature = ob.data
+    print("APPLYTRANSFORMATION")
+    print(nbFrame)
+    
+    for frame in range(0, int(nbFrame)):
+        transformationBones = tabRotationFrameBVH[frame]
+        positionBones = tabLocationFrameBVH[frame]
+        for bone in armature.bones:
+            pbone = ob.pose.bones[bone.name]
+            analogyzeName = analogyzeBoneNames(bone.name)
+            if analogyzeName == "null":
+                print("ERREUR NAMING")
+            else:
+                print(transformationBones)
+                print(analogyzeName)
+                
+            if analogyzeName != "null":
+                pbone.matrix = transformationBones[analogyzeName]
+                pbone.location = positionBones[analogyzeName]
+            
 def retargeting(fileName):
+    bpy.ops.import_anim.bvh(filepath=fileName)
     parsingBVH(fileName)
+    applyTransformation(fileName)
     
 # MAIN #
 
-retargeting("C:/Users/User/Documents/GitHub/Blender-HumanMotion/Blender/BVH/01/01_01.bvh")
+retargeting("C:\\Users\\Anthony\\Documents\\GIT\\Blender-HumanMotion\\Blender\\BVH\\01.bvh")
+#print(tabRotationFrameBVH[2])
