@@ -1,6 +1,10 @@
 import bpy
 import math
 
+ampVert = 1
+ampHoriz = 1
+freq = 0.2
+ampSpine = 0.1
 
 a=0.2
 b=0.05
@@ -42,21 +46,20 @@ c=ob.pose.bones['control']
 
 
 for framee in range(0,int(nbFrame)):
-    pbone.location=(avancement,b*math.sin(framee),0)
+    pbone.location=(avancement,ampSpine*math.fabs(math.sin(freq*framee)),0)
     pbone.keyframe_insert(data_path="location" ,frame=framee)
+    vertCoord1 = 0 if math.sin(freq*framee) < 0 else math.sin(freq*framee)
+    vertCoord2 = 0 if -math.sin(freq*framee) < 0 else math.sin(freq*framee)
     c.location=(0,float(framee)/nbFrame*vitesse,0)
     c.keyframe_insert(data_path="location" ,frame=framee)
-    rl.location=(0,a*math.cos(framee),a*math.sin(framee))
+    rl.location=(0,ampHoriz*math.cos(freq*framee),ampVert*vertCoord1)
     rl.keyframe_insert(data_path="location" ,frame=framee)
-    ll.location=(0,a*math.cos(framee+3.14),a*math.sin(framee+3.14))
+    ll.location=(0,ampHoriz*math.cos(freq*framee+3.14),ampVert*vertCoord2)
     ll.keyframe_insert(data_path="location" ,frame=framee)
-    la.location=(0,a*math.cos(framee)-a/2,a*math.sin(framee))
+    la.location=(0,ampHoriz*math.cos(freq*framee)-a/2,ampVert*vertCoord1)
     la.keyframe_insert(data_path="location" ,frame=framee)
-    ra.location=(0,a*math.cos(framee+3.14)-a,a*math.sin(framee+3.14))
+    ra.location=(0,ampHoriz*math.cos(freq*framee+3.14)-ampHoriz,ampVert*vertCoord2)
     ra.keyframe_insert(data_path="location" ,frame=framee)
-    
-    
-    
     
     
     
