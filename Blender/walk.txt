@@ -2,64 +2,83 @@ import bpy
 import math
 
 ampVert = 1
-ampHoriz = 1
-freq = 0.2
-ampSpine = 0.1
+ampHoriz = 5
+freq = 0.5
+ampSpine = 0.5
+ampArmv = .5
+ampArmh = .5
+
+rpos = 0
+lpos = 0
+rframe = 0
+lframe = 0
+rchanged = False
+lchanged = False
+rn = 0
+ln = 0
+
 
 a=0.2
 b=0.05
 avancement=0.1
-nbFrame=50
-vitesse=5
+nbFrame=100
+#vitesse=5
 
 ob = bpy.data.objects['rig']
 bpy.context.scene.objects.active = ob
 bpy.ops.object.mode_set(mode='POSE')
 
+body = ob.pose.bones['firstControl']
 pbone = ob.pose.bones['spine1']
 rl = ob.pose.bones['rightLegIK']
 ll = ob.pose.bones['leftLegIK']
 ra = ob.pose.bones['rightArmIK']
 la = ob.pose.bones['leftArmIK']
-c=ob.pose.bones['control']
-# Set rotation mode to Euler XYZ, easier to understand
-# than default quaternions
-#pbone.rotation_mode = 'XYZ'
-# select axis in ['X','Y','Z']  <--bone local
-#axis = 'Z'
-#angle = 120
-#pbone.rotation_euler.rotate_axis(axis, -0.5)
 
-#pbone.transform.translate(value=(1,0,0))
+laLoc = la.location
+raLoc = ra.location
 
-
-
-
-
-#bpy.ops.object.mode_set(mode='OBJECT')
-#insert a keyframe
-
-
-#pbone.keyframe_insert(data_path="rotation_euler" ,frame=1)
-
-
-
-
-for framee in range(0,int(nbFrame)):
-    pbone.location=(avancement,ampSpine*math.fabs(math.sin(freq*framee)),0)
+for framee in range(0,int(nbFrame)):   
+    pbone.location=(0,-ampSpine*math.fabs(math.sin(freq*framee)),0)
     pbone.keyframe_insert(data_path="location" ,frame=framee)
-    vertCoord1 = 0 if math.sin(freq*framee) < 0 else math.sin(freq*framee)
-    vertCoord2 = 0 if -math.sin(freq*framee) < 0 else math.sin(freq*framee)
-    c.location=(0,float(framee)/nbFrame*vitesse,0)
-    c.keyframe_insert(data_path="location" ,frame=framee)
-    rl.location=(0,ampHoriz*math.cos(freq*framee),ampVert*vertCoord1)
+    
+    body.location=(float(framee)*ampHoriz*freq/2/3.14, 0, 0)
+    body.keyframe_insert(data_path="location" ,frame=framee)
+    
+    rvert = ampVert * math.sin(freq*framee)
+    rhoriz = (rn+1)*ampHoriz*freq/2/3.14
+    lvert = -ampVert*math.sin(freq*framee)
+    lhoriz = (ln+1)*ampHoriz*freq/2/3.14
+    
+    if rvert < 0:
+        if rchanged == 0:
+            rchanged = True
+            lchanged = False
+            rn=1
+        rvert = 0
+        rhoriz = 0
+    else:
+        if lchanged == 0:
+            lchanged = True
+            rchanged = False
+            ln=1
+        lvert = 0
+        lhoriz = 0
+    
+    lpos -= lhoriz
+    rpos -= rhoriz
+    rl.location=(0,rpos,rvert)
     rl.keyframe_insert(data_path="location" ,frame=framee)
-    ll.location=(0,ampHoriz*math.cos(freq*framee+3.14),ampVert*vertCoord2)
+    ll.location=(0,lpos,lvert)
     ll.keyframe_insert(data_path="location" ,frame=framee)
-    la.location=(0,ampHoriz*math.cos(freq*framee)-a/2,ampVert*vertCoord1)
+    
+    la.location=(laLoc.x,laLoc.y+ampArmh*math.cos(freq*framee),laLoc.z + ampArmv*math.sin(freq*framee))
     la.keyframe_insert(data_path="location" ,frame=framee)
-    ra.location=(0,ampHoriz*math.cos(freq*framee+3.14)-ampHoriz,ampVert*vertCoord2)
+    ra.location=(raLoc.x,raLoc.y-ampArmh*math.cos(freq*framee),raLoc.z + ampArmv*math.sin(freq*framee))
     ra.keyframe_insert(data_path="location" ,frame=framee)
+    
+    laLoc = la.location
+    raLoc = ra.location
     
     
     
