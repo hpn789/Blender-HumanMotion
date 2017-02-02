@@ -24,11 +24,11 @@ bpy.context.scene.objects.active = ob
 bpy.ops.object.mode_set(mode='POSE')
 
 body = ob.pose.bones['firstControl']
-pbone = ob.pose.bones['spine1']
-rl = ob.pose.bones['rightLegIK']
-ll = ob.pose.bones['leftLegIK']
-ra = ob.pose.bones['rightArmIK']
-la = ob.pose.bones['leftArmIK']
+pbone = ob.pose.bones['hips']
+rl = ob.pose.bones['leftLegIK']
+ll = ob.pose.bones['rightLegIK']
+ra = ob.pose.bones['leftArmIK']
+la = ob.pose.bones['rightArmIK']
 
 for framee in range(0,int(nbFrame)):   
     pbone.location=(0,-ampSpine*math.fabs(math.sin(freq*framee)),0)
