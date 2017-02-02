@@ -11,6 +11,7 @@ from bpy.types import (Panel,
                        Operator,
                        PropertyGroup,
                        )
+import math
         
 
 class MySettings(PropertyGroup):
@@ -35,6 +36,14 @@ class MySettings(PropertyGroup):
         name = "Feet lenght",
         description="A float property",
         default = .3,
+        min = 0,
+        max = 1000
+        )
+    
+    jumpHeight = FloatProperty(
+        name = "Jump height",
+        description="A float property",
+        default = 4,
         min = 0,
         max = 1000
         )
@@ -127,6 +136,73 @@ class RIG_OT_generaterig(bpy.types.Operator):
  
 #    Registration
 bpy.utils.register_class(RIG_OT_generaterig)
+
+
+class AnimationPanel(bpy.types.Panel):
+    
+    bl_label = "Animation Panel"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+
+    def draw(self, context):
+        
+        scene = context.scene
+        mytool = scene.my_tool
+        
+        self.layout.operator("rig.jump")
+        self.layout.prop(mytool, "jumpHeight")
+        self.layout.operator("rig.walk")
+        r=self.layout.row()
+        r.label(text="Anim controls")
+        self.layout.operator("rig.play")
+        self.layout.operator("rig.reset")
+        
+bpy.utils.register_class(AnimationPanel)
+        
+class RIG_OT_jump(bpy.types.Operator):
+    bl_idname = "rig.jump"
+    bl_label = "Play jump"
+ 
+    def execute(self, context):
+        jump()
+        return{'FINISHED'}    
+ 
+#    Registration
+bpy.utils.register_class(RIG_OT_jump)
+
+class RIG_OT_walk(bpy.types.Operator):
+    bl_idname = "rig.walk"
+    bl_label = "Play walk"
+ 
+    def execute(self, context):
+        walk()
+        return{'FINISHED'}    
+ 
+#    Registration
+bpy.utils.register_class(RIG_OT_walk)
+
+class RIG_OT_play(bpy.types.Operator):
+    bl_idname = "rig.play"
+    bl_label = "Play/Stop"
+ 
+    def execute(self, context):
+        bpy.ops.screen.animation_play()
+        return{'FINISHED'}    
+ 
+#    Registration
+bpy.utils.register_class(RIG_OT_play)
+
+class RIG_OT_reset(bpy.types.Operator):
+    bl_idname = "rig.reset"
+    bl_label = "Reset"
+ 
+    def execute(self, context):
+        bpy.ops.screen.frame_jump(end=False)
+        return{'FINISHED'}    
+ 
+#    Registration
+bpy.utils.register_class(RIG_OT_reset)
+        
 
 class ModalOperator(bpy.types.Operator):
     bl_idname = "object.modal_operator"
@@ -595,7 +671,40 @@ def deleteBalises():
 def link():
     bpy.context.scene.objects.active=bpy.data.objects["rig"]
     bpy.ops.object.parent_set(type='ARMATURE_AUTO')
-                    
+    
+def jump():
+    scene = bpy.context.scene
+    mytool = scene.my_tool
+    
+    hauteur=mytool.jumpHeight
+    nbFrame=200
+
+    ob = bpy.data.objects['rig']
+    bpy.context.scene.objects.active = ob
+    bpy.ops.object.mode_set(mode='POSE')
+
+    pbone = ob.pose.bones['firstControl']
+    rl = ob.pose.bones['rightLegIK']
+    ll = ob.pose.bones['leftLegIK']
+    ra = ob.pose.bones['rightArmIK']
+    la = ob.pose.bones['leftArmIK']
+
+
+
+    for framee in range(0,int(nbFrame)):
+        pbone.location=(0,hauteur*-math.sin(framee/float(nbFrame)*3.14*2),0)
+        pbone.keyframe_insert(data_path="location" ,frame=framee)
+
+        la.location=(0,0,-math.sin(framee/float(nbFrame)*3.14*2)*5)
+        la.keyframe_insert(data_path="location" ,frame=framee)
+        ra.location=(0,0,-math.sin(framee/float(nbFrame)*3.14*2)*5)
+        ra.keyframe_insert(data_path="location" ,frame=framee)
+        
+    bpy.ops.screen.animation_play()
+    
+def walk():
+    print("walk")
+                        
 
 if __name__ == "__main__":
     #bpy.ops.wm.mouse_position('INVOKE_DEFAULT')
