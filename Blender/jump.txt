@@ -1,0 +1,26 @@
+import bpy
+import math
+
+hauteur=6
+nbFrame=200
+
+ob = bpy.data.objects['rig']
+bpy.context.scene.objects.active = ob
+bpy.ops.object.mode_set(mode='POSE')
+
+pbone = ob.pose.bones['firstControl']
+rl = ob.pose.bones['rightLegIK']
+ll = ob.pose.bones['leftLegIK']
+ra = ob.pose.bones['rightArmIK']
+la = ob.pose.bones['leftArmIK']
+
+
+
+for framee in range(0,int(nbFrame)):
+    pbone.location=(0,hauteur*-math.sin(framee/float(nbFrame)*3.14*2),0)
+    pbone.keyframe_insert(data_path="location" ,frame=framee)
+
+    la.location=(0,0,-math.sin(framee/float(nbFrame)*3.14*2)*5)
+    la.keyframe_insert(data_path="location" ,frame=framee)
+    ra.location=(0,0,-math.sin(framee/float(nbFrame)*3.14*2)*5)
+    ra.keyframe_insert(data_path="location" ,frame=framee)
