@@ -5,7 +5,7 @@ ampVert = 1
 ampHoriz = 5
 freq = 0.5
 ampSpine = 0.5
-ampArmv = .5
+ampArmv = 5
 ampArmh = .5
 
 rpos = 0
@@ -17,12 +17,7 @@ lchanged = False
 rn = 0
 ln = 0
 
-
-a=0.2
-b=0.05
-avancement=0.1
 nbFrame=100
-#vitesse=5
 
 ob = bpy.data.objects['rig']
 bpy.context.scene.objects.active = ob
@@ -34,9 +29,6 @@ rl = ob.pose.bones['rightLegIK']
 ll = ob.pose.bones['leftLegIK']
 ra = ob.pose.bones['rightArmIK']
 la = ob.pose.bones['leftArmIK']
-
-laLoc = la.location
-raLoc = ra.location
 
 for framee in range(0,int(nbFrame)):   
     pbone.location=(0,-ampSpine*math.fabs(math.sin(freq*framee)),0)
@@ -71,14 +63,8 @@ for framee in range(0,int(nbFrame)):
     rl.keyframe_insert(data_path="location" ,frame=framee)
     ll.location=(0,lpos,lvert)
     ll.keyframe_insert(data_path="location" ,frame=framee)
-    
-    la.location=(laLoc.x,laLoc.y+ampArmh*math.cos(freq*framee),laLoc.z + ampArmv*math.sin(freq*framee))
+    #ampArmh*math.cos(freq*framee)
+    la.location=(0,0,ampArmv*math.sin(freq*framee))
     la.keyframe_insert(data_path="location" ,frame=framee)
-    ra.location=(raLoc.x,raLoc.y-ampArmh*math.cos(freq*framee),raLoc.z + ampArmv*math.sin(freq*framee))
+    ra.location=(0, 0,ampArmv*math.sin(freq*framee))
     ra.keyframe_insert(data_path="location" ,frame=framee)
-    
-    laLoc = la.location
-    raLoc = ra.location
-    
-    
-    
