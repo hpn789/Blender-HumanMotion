@@ -1,7 +1,14 @@
 import bpy
+from math import radians
 
 offsetBones = {}
 nameBones = []
+locationBonesBVH = {}
+rotationBonesBVH = {}
+tabLocationFrameBVH = {}
+tabRotationFrameBVH = {}
+nameBonesRig = ["leftHand", "leftForearm", "leftArm", "head", "neck", "rightHand", "rightForearm", "rightArm", "spine3", "spine2", "spine2", "spine1", "leftThigh", "leftLeg", "leftFeet", "rightThigh", "rightLeg", "rightFeet"]
+nbFrame = 0
 
 def retrieveAllNameBones(content):
     
@@ -23,29 +30,133 @@ def retrieveAllNameBones(content):
             
         nameBones.append(nameBone)
         content = content[content.find("{") + 1 : ]
+        
+def numberFrame(content):
+    if content.find("Frames") == -1:
+        return 200
+    pos = content.find("Frames:") + 8
+    posF = content.find("Frame", pos)
+    nb = content[:posF]
+    return nb
     
 def parsingBVH(fileName):
     myFile = open(fileName)
     fileContent = myFile.read()
-    
+    scene = bpy.context.scene
     # Pour gérer la casse on met tout en minuscule
     fileContent = fileContent.lower()
     
     # On recupère le nom de tous les bones du BVH
     retrieveAllNameBones(fileContent)
     
-    # On récupère les position offset de tous les bones
-    # Hips
-    posDebHips = fileContent.find("hips") + 4
-    fileContent = fileContent[posDebHips:]
-    posDebOffsetHips = fileContent.find("offset") + 7
-    posEndOffsetHips = fileContent.find("channels") - 2
-    posOffsetHips = fileContent[posDebOffsetHips : posEndOffsetHips]
-    offsetBones["hips"] = posOffsetHips
+    # On récupère le nobre de frame du BVH
+    nbFrame = 500 #numberFrame(fileContent)
     
+    # Traitement KeyFrame
+    ob = bpy.context.object
+    incr = 0
+    
+    if ob.type == 'ARMATURE':
+        armature = ob.data
+
+    for frame in range(0, int(nbFrame)):
+        scene.frame_set(frame)
+        for bone in armature.bones:
+            bpy.ops.object.mode_set(mode='POSE')
+            pbone = ob.pose.bones[bone.name]
+            # On passe en mode de rotation EULER 
+            pbone.rotation_mode = 'XYZ'
+            locationBonesBVH[bone.name.lower()] = pbone.location
+            rotationBonesBVH[bone.name.lower()] = pbone.matrix
+            # On choisi entre X, Y et Z, local au bone
+            axis = 'Z'
+            angle = 50
+            #pbone.rotation_euler.rotate_axis(axis, radians(angle))
+            bpy.ops.object.mode_set(mode='OBJECT')
+            #insert une keyframe
+            pbone.keyframe_insert(data_path="rotation_euler" ,frame = frame)
+        tabLocationFrameBVH[frame] = locationBonesBVH
+        tabRotationFrameBVH[frame] = rotationBonesBVH
+
+# Fonction qui permet de faire l'analogie entre les nom du squelette du BVh et ceux de l'auto-rigging
+def analogyzeBoneNames(boneName):
+    boneName = boneName.lower()
+    if boneName.find("head") != -1:
+        return "head"
+    elif boneName.find("neck") != -1:
+        return "neck"
+    elif boneName.find("spine") != -1:
+        return "spine"
+    elif boneName.find("lowerback") != -1 or boneName.find("back") != -1:
+        return "lowerback"
+    elif boneName.find("hips") != -1:
+        return "hips"
+    elif boneName.find("forearm") != -1 and (boneName.find("l") != -1 or boneName.find("left") != -1):
+        return "leftforearm"
+    elif boneName.find("arm") != -1 and (boneName.find("l") != -1 or boneName.find("left") != -1):
+        return "leftarm"
+    elif ((boneName.find("up") != -1 and boneName.find("leg") != -1) or boneName.find("thigh") != -1) and (boneName.find("right") != -1 or boneName.find("r") != -1):
+        return "rightupleg"
+    elif boneName.find("leg") != -1 and (boneName.find("right") != -1 or boneName.find("r") != -1):
+        return "rightleg"
+    elif ((boneName.find("up") != -1 and boneName.find("leg") != -1) or boneName.find("thigh") != -1) and (boneName.find("left") != -1 or boneName.find("l") != -1):
+        return "leftupleg"
+    elif boneName.find("leg") != -1 and (boneName.find("left") != -1 or boneName.find("l") != -1):
+        return "leftleg"
+    elif boneName.find("foot") != -1 and (boneName.find("left") != -1 or boneName.find("l") != -1):
+        return "leftfoot"
+    elif boneName.find("hand") != -1 and (boneName.find("left") != -1 or boneName.find("l") != -1):
+        return "lefthand"
+    elif boneName.find("forearm") != -1 and (boneName.find("r") != -1 or boneName.find("right") != -1):
+        return "rightforearm"
+    elif boneName.find("arm") != -1 and (boneName.find("r") != -1 or boneName.find("right") != -1):
+        return "rightarm"
+    elif boneName.find("foot") != -1 and (boneName.find("right") != -1 or boneName.find("r") != -1):
+        return "rightfoot"
+    elif boneName.find("hand") != -1 and (boneName.find("right") != -1 or boneName.find("r") != -1):
+        return "righthand"
+    else:
+        return "null"
+
+# Fonction qui permet d'appliquer la transformation de chaque bones à chaque frame sur le squelette de l'auo-rigging
+def applyTransformation(fileName):
+    ob = bpy.data.objects['rig']
+    bpy.context.scene.objects.active = ob
+    myFile = open(fileName)
+    fileContent = myFile.read()
+    nbFrame = 500 #numberFrame(fileContent)
+    if ob.type == 'ARMATURE':
+        armature = ob.data
+    print("APPLYTRANSFORMATION")
+    print(nbFrame)
+    
+    # On parcourt toutes les frames du BVH
+    for frame in range(0, int(nbFrame)):
+        transformationBones = tabRotationFrameBVH[frame]
+        positionBones = tabLocationFrameBVH[frame]
+        # On parcourt tous les os du squelette de l'auto-rigging
+        for bone in armature.bones:
+            analogyzeName = "null"
+            pbone = ob.pose.bones[bone.name]
+            if bone.name.lower().find("ik") == -1:
+                analogyzeName = analogyzeBoneNames(bone.name)
+            # "null" peut correspondre à un os non pris en compte par l'auro-rigging ou un os correspondant à un IK ou controller de rigging
+            if analogyzeName == "null":
+                print("ERREUR NAMING : " + bone.name)
+            else:
+                print(analogyzeName + " : " + bone.name)
+                
+            if analogyzeName != "null":
+                pbone.matrix = transformationBones[analogyzeName]
+                pbone.location = positionBones[analogyzeName]
+                pbone.keyframe_insert(data_path="rotation_euler" ,frame = frame)
+            
 def retargeting(fileName):
+    bpy.ops.import_anim.bvh(filepath=fileName)
     parsingBVH(fileName)
+    applyTransformation(fileName)
     
 # MAIN #
 
-retargeting("C:/Users/User/Documents/GitHub/Blender-HumanMotion/Blender/BVH/01/01_01.bvh")
+# Mettre chemin du BVH
+retargeting("C:\\Users\\Anthony\\Documents\\GIT\\Blender-HumanMotion\\Blender\\BVH\\01.bvh")
