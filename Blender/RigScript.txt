@@ -329,7 +329,7 @@ def createArmature(origin):
     startX=balises["pelvis"].x
     startY=balises["leftFeet"].y
     startZ=balises["pelvis"].z
-    nb=8.5
+    nb=8
     diffX=(balises["leftFeet"].x - startX)/nb
     diffY=(balises["leftFeet"].y - startY)/nb
     diffZ=(balises["leftFeet"].z - startZ)/nb
@@ -354,7 +354,7 @@ def createArmature(origin):
     startX=balises["pelvis"].x
     startY=balises["rightFeet"].y
     startZ=balises["pelvis"].z
-    nb=8.5
+    nb=8
     diffX=(balises["rightFeet"].x - startX)/nb
     diffY=(balises["rightFeet"].y - startY)/nb
     diffZ=(balises["rightFeet"].z - startZ)/nb
@@ -416,6 +416,15 @@ def createArmature(origin):
     leftArmIK.tail = (leftArmIK.head.x-coef,leftArmIK.head.y,leftArmIK.head.z)
     leftArmIK.use_deform = False
     
+    headIK = amt.edit_bones.new('headIK')
+    headIK.head = head.tail
+    headIK.tail = (headIK.head.x-coef,headIK.head.y,headIK.head.z)
+    headIK.use_deform = False
+    
+    firstControl = amt.edit_bones.new('firstControl')
+    firstControl.head = (spine1.tail.x+gripDistance,spine1.tail.y,spine1.tail.z)
+    firstControl.tail = (firstControl.head.x ,firstControl.head.y ,firstControl.head.z+coef)
+    firstControl.use_deform = False
     
     control = amt.edit_bones.new('control')
     control.head = (0,balises["pelvis"].y,0)
@@ -423,8 +432,7 @@ def createArmature(origin):
     control.use_deform = False
     
     bpy.ops.armature.select_all(action='DESELECT')
-    rightLegIK.select = True;
-    leftLegIK.select = True;
+    headIK.select = True;
     rightArmIK.select = True;
     leftArmIK.select = True;
     rightKneeIK.select = True;
@@ -432,6 +440,13 @@ def createArmature(origin):
     rightElbowIK.select = True;
     leftElbowIK.select = True;
     spine1.select = True;
+    amt.edit_bones.active=firstControl;
+    bpy.ops.armature.parent_set(type='OFFSET')
+    
+    bpy.ops.armature.select_all(action='DESELECT')
+    firstControl.select = True;
+    rightLegIK.select = True;
+    leftLegIK.select = True;
     amt.edit_bones.active=control;
     bpy.ops.armature.parent_set(type='OFFSET')
     
@@ -446,6 +461,13 @@ def createArmature(origin):
     bpy.ops.armature.parent_set(type='OFFSET')"""
     
     bpy.ops.object.mode_set(mode='POSE')
+    
+    bpy.ops.pose.select_all(action='DESELECT')
+    bpy.context.object.pose.bones['headIK'].bone.select = True
+    bpy.context.object.data.bones.active = bpy.context.object.data.bones['head']
+    bpy.ops.pose.constraint_add_with_targets(type='IK')
+    cons = bpy.context.object.pose.bones["head"].constraints["IK"]
+    cons.chain_count=5
     
     bpy.ops.pose.select_all(action='DESELECT')
     bpy.context.object.pose.bones['leftArmIK'].bone.select = True
@@ -485,6 +507,30 @@ def createArmature(origin):
     cons.pole_target=bpy.data.objects["rig"]
     cons.pole_subtarget = "rightKneeIK"
     
+    bpy.ops.pose.select_all(action='DESELECT')
+    bpy.context.object.data.bones.active = bpy.context.object.data.bones['rightFeet']
+    bpy.ops.pose.constraint_add(type='COPY_ROTATION')
+    cons = bpy.context.object.pose.bones["rightFeet"].constraints["Copy Rotation"]
+    cons.target = bpy.data.objects["rig"]
+    cons.subtarget = "rightLegIK"
+    cons.invert_x = True
+    cons.invert_y = True
+    cons.invert_z = True
+    cons.target_space = 'LOCAL'
+    cons.owner_space = 'LOCAL'
+    
+    bpy.ops.pose.select_all(action='DESELECT')
+    bpy.context.object.data.bones.active = bpy.context.object.data.bones['leftFeet']
+    bpy.ops.pose.constraint_add(type='COPY_ROTATION')
+    cons = bpy.context.object.pose.bones["leftFeet"].constraints["Copy Rotation"]
+    cons.target = bpy.data.objects["rig"]
+    cons.subtarget = "leftLegIK"
+    cons.invert_x = True
+    cons.invert_y = True
+    cons.invert_z = True
+    cons.target_space = 'LOCAL'
+    cons.owner_space = 'LOCAL'
+    
     bpy.context.scene.layers[1]=True
     bpy.context.scene.layers[0]=False
     bpy.ops.object.mode_set(mode='OBJECT')
@@ -501,6 +547,7 @@ def createArmature(origin):
     bpy.context.scene.objects.active = bpy.data.objects['rig']
     bpy.ops.object.mode_set(mode='POSE')
     bpy.context.object.pose.bones["control"].custom_shape = bpy.data.objects["MyTorus"]
+    bpy.context.object.pose.bones["firstControl"].custom_shape = bpy.data.objects["MySphere"]
     bpy.context.object.pose.bones["rightKneeIK"].custom_shape = bpy.data.objects["MySphere"]
     bpy.context.object.pose.bones["rightElbowIK"].custom_shape = bpy.data.objects["MySphere"]
     bpy.context.object.pose.bones["leftKneeIK"].custom_shape = bpy.data.objects["MySphere"]
