@@ -1,0 +1,62 @@
+import bpy
+import math
+
+
+a=0.2
+b=0.05
+avancement=0.1
+nbFrame=50
+vitesse=5
+
+ob = bpy.data.objects['rig']
+bpy.context.scene.objects.active = ob
+bpy.ops.object.mode_set(mode='POSE')
+
+pbone = ob.pose.bones['spine1']
+rl = ob.pose.bones['rightLegIK']
+ll = ob.pose.bones['leftLegIK']
+ra = ob.pose.bones['rightArmIK']
+la = ob.pose.bones['leftArmIK']
+c=ob.pose.bones['control']
+# Set rotation mode to Euler XYZ, easier to understand
+# than default quaternions
+#pbone.rotation_mode = 'XYZ'
+# select axis in ['X','Y','Z']  <--bone local
+#axis = 'Z'
+#angle = 120
+#pbone.rotation_euler.rotate_axis(axis, -0.5)
+
+#pbone.transform.translate(value=(1,0,0))
+
+
+
+
+
+#bpy.ops.object.mode_set(mode='OBJECT')
+#insert a keyframe
+
+
+#pbone.keyframe_insert(data_path="rotation_euler" ,frame=1)
+
+
+
+
+for framee in range(0,int(nbFrame)):
+    pbone.location=(avancement,b*math.sin(framee),0)
+    pbone.keyframe_insert(data_path="location" ,frame=framee)
+    c.location=(0,float(framee)/nbFrame*vitesse,0)
+    c.keyframe_insert(data_path="location" ,frame=framee)
+    rl.location=(0,a*math.cos(framee),a*math.sin(framee))
+    rl.keyframe_insert(data_path="location" ,frame=framee)
+    ll.location=(0,a*math.cos(framee+3.14),a*math.sin(framee+3.14))
+    ll.keyframe_insert(data_path="location" ,frame=framee)
+    la.location=(0,a*math.cos(framee)-a/2,a*math.sin(framee))
+    la.keyframe_insert(data_path="location" ,frame=framee)
+    ra.location=(0,a*math.cos(framee+3.14)-a,a*math.sin(framee+3.14))
+    ra.keyframe_insert(data_path="location" ,frame=framee)
+    
+    
+    
+    
+    
+    
