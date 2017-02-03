@@ -884,12 +884,12 @@ def jump():
 
 
     for framee in range(0,int(nbFrame)):
-        pbone.location=(0,hauteur*-math.sin(framee/float(nbFrame)*3.14*2),0)
+        pbone.location=(0,hauteur*-math.sin(framee/float(nbFrame)*3.14*2*hauteur),0)
         pbone.keyframe_insert(data_path="location" ,frame=framee)
 
-        la.location=(0,0,-math.sin(framee/float(nbFrame)*3.14*2)*5)
+        la.location=(0,0,-math.sin(framee/float(nbFrame)*3.14*2*hauteur)*5)
         la.keyframe_insert(data_path="location" ,frame=framee)
-        ra.location=(0,0,-math.sin(framee/float(nbFrame)*3.14*2)*5)
+        ra.location=(0,0,-math.sin(framee/float(nbFrame)*3.14*2*hauteur)*5)
         ra.keyframe_insert(data_path="location" ,frame=framee)
         
     bpy.ops.screen.animation_play()
