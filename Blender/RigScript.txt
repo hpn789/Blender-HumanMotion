@@ -47,6 +47,54 @@ class MySettings(PropertyGroup):
         min = 0,
         max = 1000
         )
+    
+    ampVert = FloatProperty(
+        name = "ampVert",
+        description="A float property",
+        default = 1,
+        min = 0,
+        max = 1000
+        )
+    
+    ampHoriz = FloatProperty(
+        name = "ampHoriz",
+        description="A float property",
+        default = 5,
+        min = 0,
+        max = 1000
+        )
+    
+    freq = FloatProperty(
+        name = "freq",
+        description="A float property",
+        default = .5,
+        min = 0,
+        max = 1000
+        )
+    
+    ampSpine = FloatProperty(
+        name = "ampSpine",
+        description="A float property",
+        default = .5,
+        min = 0,
+        max = 1000
+        )
+    
+    ampArmv = FloatProperty(
+        name = "ampArmv",
+        description="A float property",
+        default = 5,
+        min = 0,
+        max = 1000
+        )
+    
+    ampArmh = FloatProperty(
+        name = "ampArmh",
+        description="A float property",
+        default = .5,
+        min = 0,
+        max = 1000
+        )
         
 bpy.utils.register_module(__name__)
 bpy.types.Scene.my_tool = PointerProperty(type=MySettings)
@@ -149,8 +197,18 @@ class AnimationPanel(bpy.types.Panel):
         scene = context.scene
         mytool = scene.my_tool
         
-        self.layout.operator("rig.jump")
+        r=self.layout.row()
+        r.label(text="Jump properties")
         self.layout.prop(mytool, "jumpHeight")
+        self.layout.operator("rig.jump")
+        r=self.layout.row()
+        r.label(text="Walk properties")
+        self.layout.prop(mytool, "ampVert")
+        self.layout.prop(mytool, "ampHoriz")
+        self.layout.prop(mytool, "freq")
+        self.layout.prop(mytool, "ampSpine")
+        self.layout.prop(mytool, "ampArmv")
+        self.layout.prop(mytool, "ampArmh")
         self.layout.operator("rig.walk")
         r=self.layout.row()
         r.label(text="Anim controls")
@@ -795,7 +853,77 @@ def jump():
     bpy.ops.screen.animation_play()
     
 def walk():
-    print("walk")
+    
+    scene = bpy.context.scene
+    mytool = scene.my_tool
+    
+    ampVert = mytool.ampVert
+    ampHoriz = mytool.ampHoriz
+    freq = mytool.freq
+    ampSpine = mytool.ampSpine
+    ampArmv = mytool.ampArmv
+    ampArmh = mytool.ampArmh
+
+    rpos = 0
+    lpos = 0
+    rframe = 0
+    lframe = 0
+    rchanged = False
+    lchanged = False
+    rn = 0
+    ln = 0
+
+    nbFrame=100
+
+    ob = bpy.data.objects['rig']
+    bpy.context.scene.objects.active = ob
+    bpy.ops.object.mode_set(mode='POSE')
+
+    body = ob.pose.bones['firstControl']
+    pbone = ob.pose.bones['hips']
+    rl = ob.pose.bones['leftLegIK']
+    ll = ob.pose.bones['rightLegIK']
+    ra = ob.pose.bones['leftArmIK']
+    la = ob.pose.bones['rightArmIK']
+
+    for framee in range(0,int(nbFrame)):   
+        pbone.location=(0,-ampSpine*math.fabs(math.sin(freq*framee)),0)
+        pbone.keyframe_insert(data_path="location" ,frame=framee)
+        
+        body.location=(float(framee)*ampHoriz*freq/2/3.14, 0, 0)
+        body.keyframe_insert(data_path="location" ,frame=framee)
+        
+        rvert = ampVert * math.sin(freq*framee)
+        rhoriz = (rn+1)*ampHoriz*freq/2/3.14
+        lvert = -ampVert*math.sin(freq*framee)
+        lhoriz = (ln+1)*ampHoriz*freq/2/3.14
+        
+        if rvert < 0:
+            if rchanged == 0:
+                rchanged = True
+                lchanged = False
+                rn=1
+            rvert = 0
+            rhoriz = 0
+        else:
+            if lchanged == 0:
+                lchanged = True
+                rchanged = False
+                ln=1
+            lvert = 0
+            lhoriz = 0
+        
+        lpos -= lhoriz
+        rpos -= rhoriz
+        rl.location=(0,rpos,rvert)
+        rl.keyframe_insert(data_path="location" ,frame=framee)
+        ll.location=(0,lpos,lvert)
+        ll.keyframe_insert(data_path="location" ,frame=framee)
+        #ampArmh*math.cos(freq*framee)
+        la.location=(0,0,ampArmv*math.sin(freq*framee))
+        la.keyframe_insert(data_path="location" ,frame=framee)
+        ra.location=(0, 0,ampArmv*math.sin(freq*framee))
+        ra.keyframe_insert(data_path="location" ,frame=framee)
                         
 
 if __name__ == "__main__":
