@@ -361,10 +361,22 @@ def createArmature(origin):
     
     leftArm = amt.edit_bones.new('leftArm')
     leftArm.head = spine.tail
-    print(balises["neckBase"].x+diffX*2-coefArticulation)
     leftArm.tail = (balises["neckBase"].x+diffX*2-coefArticulation,balises["neckBase"].y+diffY*2,balises["neckBase"].z+diffZ*2)
     leftArm.use_connect = True
     leftArm.parent = spine
+    
+    op = math.fabs(leftArm.head.y-leftArm.tail.y)
+    adj = math.fabs(leftArm.head.z-leftArm.tail.z)
+    leftArmAngleX = math.degrees(math.atan(op/adj))
+    
+    op = math.fabs(leftArm.head.x-leftArm.tail.x)
+    adj = math.fabs(leftArm.head.y-leftArm.tail.y)
+    leftArmAngleY = math.degrees(math.atan(op/adj))
+    
+    op = math.fabs(leftArm.head.x-leftArm.tail.x)
+    adj = math.fabs(leftArm.head.z-leftArm.tail.z)
+    leftArmAngleZ = math.degrees(math.atan(op/adj))
+
     
     leftForearm = amt.edit_bones.new('leftForearm')
     leftForearm.head = leftArm.tail
@@ -390,17 +402,29 @@ def createArmature(origin):
     rightArm.use_connect = True
     rightArm.parent = spine
     
-    rigthForearm = amt.edit_bones.new('rigthForearm')
-    rigthForearm.head = rightArm.tail
-    rigthForearm.tail = (balises["neckBase"].x+diffX*4-coefArticulation,balises["neckBase"].y+diffY*4,balises["neckBase"].z+diffZ*4)
-    rigthForearm.use_connect = True
-    rigthForearm.parent = rightArm
+    op = math.fabs(rightArm.head.y-rightArm.tail.y)
+    adj = math.fabs(rightArm.head.z-rightArm.tail.z)
+    rightArmAngleX = math.degrees(math.atan(op/adj))
+    
+    op = math.fabs(rightArm.head.x-rightArm.tail.x)
+    adj = math.fabs(rightArm.head.y-rightArm.tail.y)
+    rightArmAngleY = math.degrees(math.atan(op/adj))
+    
+    op = math.fabs(rightArm.head.x-rightArm.tail.x)
+    adj = math.fabs(rightArm.head.z-rightArm.tail.z)
+    rightArmAngleZ = math.degrees(math.atan(op/adj))
+    
+    rightForearm = amt.edit_bones.new('rightForearm')
+    rightForearm.head = rightArm.tail
+    rightForearm.tail = (balises["neckBase"].x+diffX*4-coefArticulation,balises["neckBase"].y+diffY*4,balises["neckBase"].z+diffZ*4)
+    rightForearm.use_connect = True
+    rightForearm.parent = rightArm
     
     rightHand = amt.edit_bones.new('rightHand')
-    rightHand.head = rigthForearm.tail
+    rightHand.head = rightForearm.tail
     rightHand.tail = (balises["rightHand"].x,balises["rightHand"].y,balises["rightHand"].z)
     rightHand.use_connect = True
-    rightHand.parent = rigthForearm
+    rightHand.parent = rightForearm
     
     startX=balises["pelvis"].x
     startY=balises["leftFoot"].y
@@ -537,6 +561,74 @@ def createArmature(origin):
     bpy.ops.armature.parent_set(type='OFFSET')"""
     
     bpy.ops.object.mode_set(mode='POSE')
+    
+    bpy.ops.pose.select_all(action='DESELECT')
+    
+    bone = bpy.context.object.pose.bones['leftArm']
+    bone.use_ik_limit_x = True
+    bone.ik_min_x = math.radians((135-leftArmAngleX)*-1)
+    bone.ik_max_x = math.radians((35-leftArmAngleX)*-1)
+    bone.use_ik_limit_y = True
+    bone.ik_min_y = math.radians(-90-leftArmAngleY)
+    bone.ik_max_y = math.radians(90-leftArmAngleY)
+    bone.use_ik_limit_z = True
+    bone.ik_min_z = math.radians(-45-leftArmAngleZ)
+    bone.ik_max_z = math.radians(0-leftArmAngleZ)
+    
+    bone = bpy.context.object.pose.bones['rightArm']
+    bone.use_ik_limit_x = True
+    bone.ik_min_x = math.radians(35-rightArmAngleX)
+    bone.ik_max_x = math.radians(135-rightArmAngleX)
+    bone.use_ik_limit_y = True
+    bone.ik_min_y = math.radians(-90-rightArmAngleY)
+    bone.ik_max_y = math.radians(90-rightArmAngleY)
+    bone.use_ik_limit_z = True
+    bone.ik_min_z = math.radians(-45-rightArmAngleZ)
+    bone.ik_max_z = math.radians(0-rightArmAngleZ)
+    
+    bone = bpy.context.object.pose.bones['leftForearm']
+    bone.use_ik_limit_x = True
+    bone.ik_min_x = math.radians(0)
+    bone.ik_max_x = math.radians(0)
+    bone.use_ik_limit_y = True
+    bone.ik_min_y = math.radians(0)
+    bone.ik_max_y = math.radians(0)
+    bone.use_ik_limit_z = True
+    bone.ik_min_z = math.radians(-150)
+    bone.ik_max_z = math.radians(0)
+    
+    bone = bpy.context.object.pose.bones['rightForearm']
+    bone.use_ik_limit_x = True
+    bone.ik_min_x = math.radians(0)
+    bone.ik_max_x = math.radians(0)
+    bone.use_ik_limit_y = True
+    bone.ik_min_y = math.radians(0)
+    bone.ik_max_y = math.radians(0)
+    bone.use_ik_limit_z = True
+    bone.ik_min_z = math.radians(-150)
+    bone.ik_max_z = math.radians(0)
+    
+    bone = bpy.context.object.pose.bones['leftHand']
+    bone.use_ik_limit_x = True
+    bone.ik_min_x = math.radians(-45)
+    bone.ik_max_x = math.radians(45)
+    bone.use_ik_limit_y = True
+    bone.ik_min_y = math.radians(-90)
+    bone.ik_max_y = math.radians(0)
+    bone.use_ik_limit_z = True
+    bone.ik_min_z = math.radians(-10)
+    bone.ik_max_z = math.radians(10)
+    
+    bone = bpy.context.object.pose.bones['rightHand']
+    bone.use_ik_limit_x = True
+    bone.ik_min_x = math.radians(-45)
+    bone.ik_max_x = math.radians(45)
+    bone.use_ik_limit_y = True
+    bone.ik_min_y = math.radians(-90)
+    bone.ik_max_y = math.radians(0)
+    bone.use_ik_limit_z = True
+    bone.ik_min_z = math.radians(-10)
+    bone.ik_max_z = math.radians(10)
     
     bpy.ops.pose.select_all(action='DESELECT')
     bpy.context.object.pose.bones['headIK'].bone.select = True
