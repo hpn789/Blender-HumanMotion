@@ -108,6 +108,13 @@ class MySettings(PropertyGroup):
         default = "D:\\PC\\Documents\\GitHub\\Blender-HumanMotion\\Blender\\BVH\\01\\01_02.bvh",
         )
     
+    orientationElbow = FloatProperty(
+        name = "orientationElbow",
+        description="A float property",
+        default = 25,
+        min = 0,
+        max = 1000
+        )
         
 bpy.utils.register_module(__name__)
 bpy.types.Scene.my_tool = PointerProperty(type=MySettings)
@@ -223,6 +230,7 @@ class AnimationPanel(bpy.types.Panel):
         self.layout.prop(mytool, "ampSpine")
         self.layout.prop(mytool, "ampArmv")
         self.layout.prop(mytool, "ampArmh")
+        self.layout.prop(mytool, "orientationElbow")
         self.layout.operator("rig.walk")
         r=self.layout.row()
         r.label(text="Anim controls")
@@ -426,13 +434,11 @@ def createArmature(origin):
     lowerBack = amt.edit_bones.new('lowerBack')
     lowerBack.head = hips.tail
     lowerBack.tail = (balises["pelvis"].x+diffX*2-coefArticulation,balises["pelvis"].y+diffY*2,balises["pelvis"].z+diffZ*2)
-    lowerBack.use_connect = True
     lowerBack.parent = hips
     
     spine = amt.edit_bones.new('spine')
     spine.head = lowerBack.tail
     spine.tail = (balises["neckBase"].x,balises["neckBase"].y,balises["neckBase"].z)
-    spine.use_connect = True
     spine.parent = lowerBack
     
     diffX=balises["topHead"].x - balises["neckBase"].x
@@ -578,6 +584,8 @@ def createArmature(origin):
         leftArm.use_connect = True
         head.use_connect = True
         neck.use_connect = True
+        spine.use_connect = True
+        lowerBack.use_connect = True
         
         rightLegIK = amt.edit_bones.new('rightLegIK')
         rightLegIK.head = rightFoot.head
@@ -897,6 +905,7 @@ def walk():
     ampSpine = mytool.ampSpine
     ampArmv = mytool.ampArmv
     ampArmh = mytool.ampArmh
+    orientationElbow = mytool.orientationElbow
 
     rpos = 0
     lpos = 0
@@ -920,10 +929,23 @@ def walk():
     ra = ob.pose.bones['leftArmIK']
     la = ob.pose.bones['rightArmIK']
 
-    for framee in range(0,int(nbFrame)):   
+    for framee in range(0,int(nbFrame)):
+        if framee == 0:
+            bpy.ops.object.mode_set(mode='POSE')
+            bpy.ops.pose.select_all(action='DESELECT')
+            bpy.context.object.data.bones.active = bpy.context.object.data.bones['leftElbowIK']
+            bpy.ops.transform.translate(value=(0, 0, -orientationElbow))
+            bpy.ops.pose.select_all(action='DESELECT')
+            bpy.context.object.data.bones.active = bpy.context.object.data.bones['rightElbowIK']
+            bpy.ops.transform.translate(value=(0, 0, orientationElbow))
+            bpy.ops.pose.select_all(action='DESELECT') 
+
+            
+            bpy.ops.object.mode_set(mode='OBJECT')
+
         pbone.location=(0,-ampSpine*math.fabs(math.sin(freq*framee)),0)
         pbone.keyframe_insert(data_path="location" ,frame=framee)
-        
+    
         body.location=(float(framee)*ampHoriz*freq/2/3.14, 0, 0)
         body.keyframe_insert(data_path="location" ,frame=framee)
         
@@ -958,6 +980,8 @@ def walk():
         la.keyframe_insert(data_path="location" ,frame=framee)
         ra.location=(0, 0,ampArmv*math.sin(freq*framee))
         ra.keyframe_insert(data_path="location" ,frame=framee)
+        
+        bpy.ops.screen.animation_play()
                         
 
 def numberFrame(fileName):
