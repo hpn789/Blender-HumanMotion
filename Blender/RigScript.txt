@@ -95,6 +95,19 @@ class MySettings(PropertyGroup):
         min = 0,
         max = 1000
         )
+    
+    constraints = BoolProperty(
+        name = "Constraints",
+        description="A bool property",
+        default = True,
+        )
+        
+    bvhLocation = StringProperty(
+        name = "BVH",
+        description="A string property",
+        default = "D:\\PC\\Documents\\GitHub\\Blender-HumanMotion\\Blender\\BVH\\01\\01_02.bvh",
+        )
+    
         
 bpy.utils.register_module(__name__)
 bpy.types.Scene.my_tool = PointerProperty(type=MySettings)
@@ -114,6 +127,7 @@ class CustomPanel(bpy.types.Panel):
         
         self.layout.operator("rig.positionview")
         self.layout.operator("rig.placebalise")
+        layout.prop(mytool, "constraints")
         self.layout.operator("rig.generaterig")
         self.layout.operator("rig.deletebalises")
         self.layout.operator("rig.link")
@@ -260,7 +274,34 @@ class RIG_OT_reset(bpy.types.Operator):
  
 #    Registration
 bpy.utils.register_class(RIG_OT_reset)
+
+
+class RetargetPanel(bpy.types.Panel):
+    
+    bl_label = "Retarget Panel"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+
+    def draw(self, context):
         
+        scene = context.scene
+        mytool = scene.my_tool
+        
+        self.layout.prop(mytool, "bvhLocation")
+        self.layout.operator("rig.retarget")
+        
+bpy.utils.register_class(RetargetPanel)
+
+class RIG_OT_retarget(bpy.types.Operator):
+    bl_idname = "rig.retarget"
+    bl_label = "Retarget"
+ 
+    def execute(self, context):
+        retargeting()
+        return{'FINISHED'}    
+ 
+#    Registration
+bpy.utils.register_class(RIG_OT_retarget)
 
 class ModalOperator(bpy.types.Operator):
     bl_idname = "object.modal_operator"
@@ -333,6 +374,7 @@ def createArmature(origin):
     feetLength=mytool.feetLength
     gripDistance = mytool.gripDistance
     coef=mytool.sizeGrip
+    constraints = mytool.constraints
     
     balises = {}
     
@@ -403,13 +445,11 @@ def createArmature(origin):
     neck = amt.edit_bones.new('neck')
     neck.head = spine.tail
     neck.tail = (balises["neckBase"].x+diffX,balises["neckBase"].y+diffY,balises["neckBase"].z+diffZ)
-    neck.use_connect = True
     neck.parent = spine
     
     head = amt.edit_bones.new('head')
     head.head = neck.tail
     head.tail = (balises["topHead"].x,balises["topHead"].y,balises["topHead"].z)
-    head.use_connect = True
     head.parent = neck
     
     nb=5
@@ -420,7 +460,6 @@ def createArmature(origin):
     leftArm = amt.edit_bones.new('leftArm')
     leftArm.head = spine.tail
     leftArm.tail = (balises["neckBase"].x+diffX*2-coefArticulation,balises["neckBase"].y+diffY*2,balises["neckBase"].z+diffZ*2)
-    leftArm.use_connect = True
     leftArm.parent = spine
     
     op = math.fabs(leftArm.head.y-leftArm.tail.y)
@@ -439,13 +478,11 @@ def createArmature(origin):
     leftForearm = amt.edit_bones.new('leftForearm')
     leftForearm.head = leftArm.tail
     leftForearm.tail = (balises["neckBase"].x+diffX*4-coefArticulation,balises["neckBase"].y+diffY*4,balises["neckBase"].z+diffZ*4)
-    leftForearm.use_connect = True
     leftForearm.parent = leftArm
     
     leftHand = amt.edit_bones.new('leftHand')
     leftHand.head = leftForearm.tail
     leftHand.tail = (balises["leftHand"].x,balises["leftHand"].y,balises["leftHand"].z)
-    leftHand.use_connect = True
     leftHand.parent = leftForearm
     
     nb=5
@@ -457,7 +494,6 @@ def createArmature(origin):
     rightArm.head = spine.tail
     print(balises["neckBase"].x+diffX*2-coefArticulation)
     rightArm.tail = (balises["neckBase"].x+diffX*2-coefArticulation,balises["neckBase"].y+diffY*2,balises["neckBase"].z+diffZ*2)
-    rightArm.use_connect = True
     rightArm.parent = spine
     
     op = math.fabs(rightArm.head.y-rightArm.tail.y)
@@ -475,13 +511,11 @@ def createArmature(origin):
     rightForearm = amt.edit_bones.new('rightForearm')
     rightForearm.head = rightArm.tail
     rightForearm.tail = (balises["neckBase"].x+diffX*4-coefArticulation,balises["neckBase"].y+diffY*4,balises["neckBase"].z+diffZ*4)
-    rightForearm.use_connect = True
     rightForearm.parent = rightArm
     
     rightHand = amt.edit_bones.new('rightHand')
     rightHand.head = rightForearm.tail
     rightHand.tail = (balises["rightHand"].x,balises["rightHand"].y,balises["rightHand"].z)
-    rightHand.use_connect = True
     rightHand.parent = rightForearm
     
     startX=balises["pelvis"].x
@@ -500,13 +534,11 @@ def createArmature(origin):
     leftLeg = amt.edit_bones.new('leftLeg')
     leftLeg.head = leftUpLeg.tail
     leftLeg.tail = (startX+diffX*8+coefArticulation,startY+diffY*8, startZ+diffZ*8)
-    leftLeg.use_connect = True
     leftLeg.parent = leftUpLeg
     
     leftFoot = amt.edit_bones.new('leftFoot')
     leftFoot.head = leftLeg.tail
     leftFoot.tail = (feetLength,balises["leftFoot"].y,balises["leftFoot"].z)
-    leftFoot.use_connect = True
     leftFoot.parent = leftLeg
     
     startX=balises["pelvis"].x
@@ -525,259 +557,261 @@ def createArmature(origin):
     rightLeg = amt.edit_bones.new('rightLeg')
     rightLeg.head = rightUpLeg.tail
     rightLeg.tail = (startX+diffX*8+coefArticulation,startY+diffY*8, startZ+diffZ*8)
-    rightLeg.use_connect = True
     rightLeg.parent = rightUpLeg
     
     rightFoot = amt.edit_bones.new('rightFoot')
     rightFoot.head = rightLeg.tail
     rightFoot.tail = (feetLength,balises["rightFoot"].y,balises["rightFoot"].z)
-    rightFoot.use_connect = True
     rightFoot.parent = rightLeg
     
-    rightLegIK = amt.edit_bones.new('rightLegIK')
-    rightLegIK.head = rightFoot.head
-    rightLegIK.tail = (rightLegIK.head.x-coef,rightLegIK.head.y,rightLegIK.head.z)
-    rightLegIK.use_deform = False
     
-    leftLegIK = amt.edit_bones.new('leftLegIK')
-    leftLegIK.head = leftFoot.head
-    leftLegIK.tail = (leftLegIK.head.x-coef,leftLegIK.head.y,leftLegIK.head.z)
-    leftLegIK.use_deform = False
+    if constraints:
+        rightFoot.use_connect = True
+        rightLeg.use_connect = True
+        leftFoot.use_connect = True
+        leftLeg.use_connect = True
+        rightHand.use_connect = True
+        rightForearm.use_connect = True
+        rightArm.use_connect = True
+        leftHand.use_connect = True
+        leftForearm.use_connect = True
+        leftArm.use_connect = True
+        head.use_connect = True
+        neck.use_connect = True
+        
+        rightLegIK = amt.edit_bones.new('rightLegIK')
+        rightLegIK.head = rightFoot.head
+        rightLegIK.tail = (rightLegIK.head.x-coef,rightLegIK.head.y,rightLegIK.head.z)
+        rightLegIK.use_deform = False
+        
+        leftLegIK = amt.edit_bones.new('leftLegIK')
+        leftLegIK.head = leftFoot.head
+        leftLegIK.tail = (leftLegIK.head.x-coef,leftLegIK.head.y,leftLegIK.head.z)
+        leftLegIK.use_deform = False
+        
+        rightKneeIK = amt.edit_bones.new('rightKneeIK')
+        rightKneeIK.head = (rightLeg.head.x+gripDistance,rightLeg.head.y,rightLeg.head.z)
+        rightKneeIK.tail = (rightKneeIK.head.x ,rightKneeIK.head.y ,rightKneeIK.head.z+coef)
+        rightKneeIK.use_deform = False
+        
+        leftKneeIK = amt.edit_bones.new('leftKneeIK')
+        leftKneeIK.head = (leftLeg.head.x+gripDistance,leftLeg.head.y,leftLeg.head.z)
+        leftKneeIK.tail = (leftKneeIK.head.x ,leftKneeIK.head.y ,leftKneeIK.head.z+coef)
+        leftKneeIK.use_deform = False
+        
+        rightElbowIK = amt.edit_bones.new('rightElbowIK')
+        rightElbowIK.head = (rightArm.tail.x+gripDistance,rightArm.tail.y,rightArm.tail.z)
+        rightElbowIK.tail = (rightElbowIK.head.x ,rightElbowIK.head.y ,rightElbowIK.head.z+coef)
+        rightElbowIK.use_deform = False
+        
+        leftElbowIK = amt.edit_bones.new('leftElbowIK')
+        leftElbowIK.head = (leftArm.tail.x+gripDistance,leftArm.tail.y,leftArm.tail.z)
+        leftElbowIK.tail = (leftElbowIK.head.x ,leftElbowIK.head.y ,leftElbowIK.head.z+coef)
+        leftElbowIK.use_deform = False
+        
+        rightArmIK = amt.edit_bones.new('rightArmIK')
+        rightArmIK.head = rightHand.tail
+        rightArmIK.tail = (rightArmIK.head.x-coef,rightArmIK.head.y,rightArmIK.head.z)
+        rightArmIK.use_deform = False
+        
+        leftArmIK = amt.edit_bones.new('leftArmIK')
+        leftArmIK.head = leftHand.tail
+        leftArmIK.tail = (leftArmIK.head.x-coef,leftArmIK.head.y,leftArmIK.head.z)
+        leftArmIK.use_deform = False
+        
+        headIK = amt.edit_bones.new('headIK')
+        headIK.head = head.tail
+        headIK.tail = (headIK.head.x-coef,headIK.head.y,headIK.head.z)
+        headIK.use_deform = False
+        
+        firstControl = amt.edit_bones.new('firstControl')
+        firstControl.head = (hips.tail.x+gripDistance,hips.tail.y,hips.tail.z)
+        firstControl.tail = (firstControl.head.x ,firstControl.head.y ,firstControl.head.z+coef)
+        firstControl.use_deform = False
+        
+        control = amt.edit_bones.new('control')
+        control.head = (0,balises["pelvis"].y,0)
+        control.tail = (2*coef,balises["pelvis"].y,0)
+        control.use_deform = False
+        
     
-    rightKneeIK = amt.edit_bones.new('rightKneeIK')
-    rightKneeIK.head = (rightLeg.head.x+gripDistance,rightLeg.head.y,rightLeg.head.z)
-    rightKneeIK.tail = (rightKneeIK.head.x ,rightKneeIK.head.y ,rightKneeIK.head.z+coef)
-    rightKneeIK.use_deform = False
-    
-    leftKneeIK = amt.edit_bones.new('leftKneeIK')
-    leftKneeIK.head = (leftLeg.head.x+gripDistance,leftLeg.head.y,leftLeg.head.z)
-    leftKneeIK.tail = (leftKneeIK.head.x ,leftKneeIK.head.y ,leftKneeIK.head.z+coef)
-    leftKneeIK.use_deform = False
-    
-    rightElbowIK = amt.edit_bones.new('rightElbowIK')
-    rightElbowIK.head = (rightArm.tail.x+gripDistance,rightArm.tail.y,rightArm.tail.z)
-    rightElbowIK.tail = (rightElbowIK.head.x ,rightElbowIK.head.y ,rightElbowIK.head.z+coef)
-    rightElbowIK.use_deform = False
-    
-    leftElbowIK = amt.edit_bones.new('leftElbowIK')
-    leftElbowIK.head = (leftArm.tail.x+gripDistance,leftArm.tail.y,leftArm.tail.z)
-    leftElbowIK.tail = (leftElbowIK.head.x ,leftElbowIK.head.y ,leftElbowIK.head.z+coef)
-    leftElbowIK.use_deform = False
-    
-    rightArmIK = amt.edit_bones.new('rightArmIK')
-    rightArmIK.head = rightHand.tail
-    rightArmIK.tail = (rightArmIK.head.x-coef,rightArmIK.head.y,rightArmIK.head.z)
-    rightArmIK.use_deform = False
-    
-    leftArmIK = amt.edit_bones.new('leftArmIK')
-    leftArmIK.head = leftHand.tail
-    leftArmIK.tail = (leftArmIK.head.x-coef,leftArmIK.head.y,leftArmIK.head.z)
-    leftArmIK.use_deform = False
-    
-    headIK = amt.edit_bones.new('headIK')
-    headIK.head = head.tail
-    headIK.tail = (headIK.head.x-coef,headIK.head.y,headIK.head.z)
-    headIK.use_deform = False
-    
-    firstControl = amt.edit_bones.new('firstControl')
-    firstControl.head = (hips.tail.x+gripDistance,hips.tail.y,hips.tail.z)
-    firstControl.tail = (firstControl.head.x ,firstControl.head.y ,firstControl.head.z+coef)
-    firstControl.use_deform = False
-    
-    control = amt.edit_bones.new('control')
-    control.head = (0,balises["pelvis"].y,0)
-    control.tail = (2*coef,balises["pelvis"].y,0)
-    control.use_deform = False
-    
-    bpy.ops.armature.select_all(action='DESELECT')
-    headIK.select = True;
-    rightArmIK.select = True;
-    leftArmIK.select = True;
-    rightKneeIK.select = True;
-    leftKneeIK.select = True;
-    rightElbowIK.select = True;
-    leftElbowIK.select = True;
-    hips.select = True;
-    amt.edit_bones.active=firstControl;
-    bpy.ops.armature.parent_set(type='OFFSET')
-    
-    bpy.ops.armature.select_all(action='DESELECT')
-    firstControl.select = True;
-    rightLegIK.select = True;
-    leftLegIK.select = True;
-    amt.edit_bones.active=control;
-    bpy.ops.armature.parent_set(type='OFFSET')
-    
-    """bpy.ops.armature.select_all(action='DESELECT')
-    rightFoot.select = True;
-    amt.edit_bones.active=rightLegIK;
-    bpy.ops.armature.parent_set(type='OFFSET')
-    
-    bpy.ops.armature.select_all(action='DESELECT')
-    leftFoot.select = True;
-    amt.edit_bones.active=leftLegIK;
-    bpy.ops.armature.parent_set(type='OFFSET')"""
-    
-    bpy.ops.object.mode_set(mode='POSE')
-    
-    bpy.ops.pose.select_all(action='DESELECT')
-    
-    bone = bpy.context.object.pose.bones['leftArm']
-    bone.use_ik_limit_x = True
-    bone.ik_min_x = math.radians((135-leftArmAngleX)*-1)
-    bone.ik_max_x = math.radians((35-leftArmAngleX)*-1)
-    bone.use_ik_limit_y = True
-    bone.ik_min_y = math.radians(-90-leftArmAngleY)
-    bone.ik_max_y = math.radians(90-leftArmAngleY)
-    bone.use_ik_limit_z = True
-    bone.ik_min_z = math.radians(-45-leftArmAngleZ)
-    bone.ik_max_z = math.radians(0-leftArmAngleZ)
-    
-    bone = bpy.context.object.pose.bones['rightArm']
-    bone.use_ik_limit_x = True
-    bone.ik_min_x = math.radians(35-rightArmAngleX)
-    bone.ik_max_x = math.radians(135-rightArmAngleX)
-    bone.use_ik_limit_y = True
-    bone.ik_min_y = math.radians(-90-rightArmAngleY)
-    bone.ik_max_y = math.radians(90-rightArmAngleY)
-    bone.use_ik_limit_z = True
-    bone.ik_min_z = math.radians(-45-rightArmAngleZ)
-    bone.ik_max_z = math.radians(0-rightArmAngleZ)
-    
-    bone = bpy.context.object.pose.bones['leftForearm']
-    bone.use_ik_limit_x = True
-    bone.ik_min_x = math.radians(0)
-    bone.ik_max_x = math.radians(0)
-    bone.use_ik_limit_y = True
-    bone.ik_min_y = math.radians(0)
-    bone.ik_max_y = math.radians(0)
-    bone.use_ik_limit_z = True
-    bone.ik_min_z = math.radians(-150)
-    bone.ik_max_z = math.radians(0)
-    
-    bone = bpy.context.object.pose.bones['rightForearm']
-    bone.use_ik_limit_x = True
-    bone.ik_min_x = math.radians(0)
-    bone.ik_max_x = math.radians(0)
-    bone.use_ik_limit_y = True
-    bone.ik_min_y = math.radians(0)
-    bone.ik_max_y = math.radians(0)
-    bone.use_ik_limit_z = True
-    bone.ik_min_z = math.radians(-150)
-    bone.ik_max_z = math.radians(0)
-    
-    bone = bpy.context.object.pose.bones['leftHand']
-    bone.use_ik_limit_x = True
-    bone.ik_min_x = math.radians(-45)
-    bone.ik_max_x = math.radians(45)
-    bone.use_ik_limit_y = True
-    bone.ik_min_y = math.radians(-90)
-    bone.ik_max_y = math.radians(0)
-    bone.use_ik_limit_z = True
-    bone.ik_min_z = math.radians(-10)
-    bone.ik_max_z = math.radians(10)
-    
-    bone = bpy.context.object.pose.bones['rightHand']
-    bone.use_ik_limit_x = True
-    bone.ik_min_x = math.radians(-45)
-    bone.ik_max_x = math.radians(45)
-    bone.use_ik_limit_y = True
-    bone.ik_min_y = math.radians(-90)
-    bone.ik_max_y = math.radians(0)
-    bone.use_ik_limit_z = True
-    bone.ik_min_z = math.radians(-10)
-    bone.ik_max_z = math.radians(10)
-    
-    bpy.ops.pose.select_all(action='DESELECT')
-    bpy.context.object.pose.bones['headIK'].bone.select = True
-    bpy.context.object.data.bones.active = bpy.context.object.data.bones['head']
-    bpy.ops.pose.constraint_add_with_targets(type='IK')
-    cons = bpy.context.object.pose.bones["head"].constraints["IK"]
-    cons.chain_count=5
-    
-    bpy.ops.pose.select_all(action='DESELECT')
-    bpy.context.object.pose.bones['leftArmIK'].bone.select = True
-    bpy.context.object.data.bones.active = bpy.context.object.data.bones['leftHand']
-    bpy.ops.pose.constraint_add_with_targets(type='IK')
-    cons = bpy.context.object.pose.bones["leftHand"].constraints["IK"]
-    cons.chain_count=3
-    cons.pole_target=bpy.data.objects["rig"]
-    cons.pole_subtarget = "leftElbowIK"
-    #cons.pole_angle = 3.14159
+        bpy.ops.armature.select_all(action='DESELECT')
+        headIK.select = True;
+        rightArmIK.select = True;
+        leftArmIK.select = True;
+        rightKneeIK.select = True;
+        leftKneeIK.select = True;
+        rightElbowIK.select = True;
+        leftElbowIK.select = True;
+        hips.select = True;
+        amt.edit_bones.active=firstControl;
+        bpy.ops.armature.parent_set(type='OFFSET')
+        
+        bpy.ops.armature.select_all(action='DESELECT')
+        firstControl.select = True;
+        rightLegIK.select = True;
+        leftLegIK.select = True;
+        amt.edit_bones.active=control;
+        bpy.ops.armature.parent_set(type='OFFSET')
+        
+        bpy.ops.object.mode_set(mode='POSE')
+        
+        bpy.ops.pose.select_all(action='DESELECT')
+        
+        bone = bpy.context.object.pose.bones['leftArm']
+        bone.use_ik_limit_x = True
+        bone.ik_min_x = math.radians((135-leftArmAngleX)*-1)
+        bone.ik_max_x = math.radians((35-leftArmAngleX)*-1)
+        bone.use_ik_limit_y = True
+        bone.ik_min_y = math.radians(-90-leftArmAngleY)
+        bone.ik_max_y = math.radians(90-leftArmAngleY)
+        bone.use_ik_limit_z = True
+        bone.ik_min_z = math.radians(-45-leftArmAngleZ)
+        bone.ik_max_z = math.radians(0-leftArmAngleZ)
+        
+        bone = bpy.context.object.pose.bones['rightArm']
+        bone.use_ik_limit_x = True
+        bone.ik_min_x = math.radians(35-rightArmAngleX)
+        bone.ik_max_x = math.radians(135-rightArmAngleX)
+        bone.use_ik_limit_y = True
+        bone.ik_min_y = math.radians(-90-rightArmAngleY)
+        bone.ik_max_y = math.radians(90-rightArmAngleY)
+        bone.use_ik_limit_z = True
+        bone.ik_min_z = math.radians(-45-rightArmAngleZ)
+        bone.ik_max_z = math.radians(0-rightArmAngleZ)
+        
+        bone = bpy.context.object.pose.bones['leftForearm']
+        bone.use_ik_limit_x = True
+        bone.ik_min_x = math.radians(0)
+        bone.ik_max_x = math.radians(0)
+        bone.use_ik_limit_y = True
+        bone.ik_min_y = math.radians(0)
+        bone.ik_max_y = math.radians(0)
+        bone.use_ik_limit_z = True
+        bone.ik_min_z = math.radians(-150)
+        bone.ik_max_z = math.radians(0)
+        
+        bone = bpy.context.object.pose.bones['rightForearm']
+        bone.use_ik_limit_x = True
+        bone.ik_min_x = math.radians(0)
+        bone.ik_max_x = math.radians(0)
+        bone.use_ik_limit_y = True
+        bone.ik_min_y = math.radians(0)
+        bone.ik_max_y = math.radians(0)
+        bone.use_ik_limit_z = True
+        bone.ik_min_z = math.radians(-150)
+        bone.ik_max_z = math.radians(0)
+        
+        bone = bpy.context.object.pose.bones['leftHand']
+        bone.use_ik_limit_x = True
+        bone.ik_min_x = math.radians(-45)
+        bone.ik_max_x = math.radians(45)
+        bone.use_ik_limit_y = True
+        bone.ik_min_y = math.radians(-90)
+        bone.ik_max_y = math.radians(0)
+        bone.use_ik_limit_z = True
+        bone.ik_min_z = math.radians(-10)
+        bone.ik_max_z = math.radians(10)
+        
+        bone = bpy.context.object.pose.bones['rightHand']
+        bone.use_ik_limit_x = True
+        bone.ik_min_x = math.radians(-45)
+        bone.ik_max_x = math.radians(45)
+        bone.use_ik_limit_y = True
+        bone.ik_min_y = math.radians(-90)
+        bone.ik_max_y = math.radians(0)
+        bone.use_ik_limit_z = True
+        bone.ik_min_z = math.radians(-10)
+        bone.ik_max_z = math.radians(10)
+        
+        bpy.ops.pose.select_all(action='DESELECT')
+        bpy.context.object.pose.bones['headIK'].bone.select = True
+        bpy.context.object.data.bones.active = bpy.context.object.data.bones['head']
+        bpy.ops.pose.constraint_add_with_targets(type='IK')
+        cons = bpy.context.object.pose.bones["head"].constraints["IK"]
+        cons.chain_count=5
+        
+        bpy.ops.pose.select_all(action='DESELECT')
+        bpy.context.object.pose.bones['leftArmIK'].bone.select = True
+        bpy.context.object.data.bones.active = bpy.context.object.data.bones['leftHand']
+        bpy.ops.pose.constraint_add_with_targets(type='IK')
+        cons = bpy.context.object.pose.bones["leftHand"].constraints["IK"]
+        cons.chain_count=3
+        cons.pole_target=bpy.data.objects["rig"]
+        cons.pole_subtarget = "leftElbowIK"
 
-    
-    bpy.ops.pose.select_all(action='DESELECT')
-    bpy.context.object.pose.bones['rightArmIK'].bone.select = True
-    bpy.context.object.data.bones.active = bpy.context.object.data.bones['rightHand']
-    bpy.ops.pose.constraint_add_with_targets(type='IK')
-    cons = bpy.context.object.pose.bones["rightHand"].constraints["IK"]
-    cons.chain_count=3
-    cons.pole_target=bpy.data.objects["rig"]
-    cons.pole_subtarget = "rightElbowIK"
-    
-    bpy.ops.pose.select_all(action='DESELECT')
-    bpy.context.object.pose.bones['leftLegIK'].bone.select = True
-    bpy.context.object.data.bones.active = bpy.context.object.data.bones['leftLeg']
-    bpy.ops.pose.constraint_add_with_targets(type='IK')
-    cons = bpy.context.object.pose.bones["leftLeg"].constraints["IK"]
-    cons.chain_count=2
-    cons.pole_target=bpy.data.objects["rig"]
-    cons.pole_subtarget = "leftKneeIK"
-    
-    bpy.ops.pose.select_all(action='DESELECT')
-    bpy.context.object.pose.bones['rightLegIK'].bone.select = True
-    bpy.context.object.data.bones.active = bpy.context.object.data.bones['rightLeg']
-    bpy.ops.pose.constraint_add_with_targets(type='IK')
-    cons = bpy.context.object.pose.bones["rightLeg"].constraints["IK"]
-    cons.chain_count=2
-    cons.pole_target=bpy.data.objects["rig"]
-    cons.pole_subtarget = "rightKneeIK"
-    
-    bpy.ops.pose.select_all(action='DESELECT')
-    bpy.context.object.data.bones.active = bpy.context.object.data.bones['rightFoot']
-    bpy.ops.pose.constraint_add(type='COPY_ROTATION')
-    cons = bpy.context.object.pose.bones["rightFoot"].constraints["Copy Rotation"]
-    cons.target = bpy.data.objects["rig"]
-    cons.subtarget = "rightLegIK"
-    cons.invert_x = True
-    cons.invert_y = True
-    cons.invert_z = True
-    cons.target_space = 'LOCAL'
-    cons.owner_space = 'LOCAL'
-    
-    bpy.ops.pose.select_all(action='DESELECT')
-    bpy.context.object.data.bones.active = bpy.context.object.data.bones['leftFoot']
-    bpy.ops.pose.constraint_add(type='COPY_ROTATION')
-    cons = bpy.context.object.pose.bones["leftFoot"].constraints["Copy Rotation"]
-    cons.target = bpy.data.objects["rig"]
-    cons.subtarget = "leftLegIK"
-    cons.invert_x = True
-    cons.invert_y = True
-    cons.invert_z = True
-    cons.target_space = 'LOCAL'
-    cons.owner_space = 'LOCAL'
-    
-    bpy.context.scene.layers[1]=True
-    bpy.context.scene.layers[0]=False
-    bpy.ops.object.mode_set(mode='OBJECT')
-    bpy.ops.object.select_all(action='SELECT')
-    bpy.ops.object.delete(use_global=False)
-    bpy.ops.mesh.primitive_torus_add(rotation=(0, 0, 0), view_align=False, location=(0, 0, 0), major_radius=coef*4, minor_radius=.2*coef)
-    bpy.context.selected_objects[0].name="MyTorus"
-    bpy.ops.mesh.primitive_uv_sphere_add(size=coef, location=(0, 0, 0))
-    bpy.context.selected_objects[0].name="MySphere"
-    bpy.context.scene.layers[0]=True
-    bpy.context.scene.layers[1]=False
-    
-    #amt.select=True
-    bpy.context.scene.objects.active = bpy.data.objects['rig']
-    bpy.ops.object.mode_set(mode='POSE')
-    bpy.context.object.pose.bones["control"].custom_shape = bpy.data.objects["MyTorus"]
-    bpy.context.object.pose.bones["firstControl"].custom_shape = bpy.data.objects["MySphere"]
-    bpy.context.object.pose.bones["rightKneeIK"].custom_shape = bpy.data.objects["MySphere"]
-    bpy.context.object.pose.bones["rightElbowIK"].custom_shape = bpy.data.objects["MySphere"]
-    bpy.context.object.pose.bones["leftKneeIK"].custom_shape = bpy.data.objects["MySphere"]
-    bpy.context.object.pose.bones["leftElbowIK"].custom_shape = bpy.data.objects["MySphere"]
+        
+        bpy.ops.pose.select_all(action='DESELECT')
+        bpy.context.object.pose.bones['rightArmIK'].bone.select = True
+        bpy.context.object.data.bones.active = bpy.context.object.data.bones['rightHand']
+        bpy.ops.pose.constraint_add_with_targets(type='IK')
+        cons = bpy.context.object.pose.bones["rightHand"].constraints["IK"]
+        cons.chain_count=3
+        cons.pole_target=bpy.data.objects["rig"]
+        cons.pole_subtarget = "rightElbowIK"
+        
+        bpy.ops.pose.select_all(action='DESELECT')
+        bpy.context.object.pose.bones['leftLegIK'].bone.select = True
+        bpy.context.object.data.bones.active = bpy.context.object.data.bones['leftLeg']
+        bpy.ops.pose.constraint_add_with_targets(type='IK')
+        cons = bpy.context.object.pose.bones["leftLeg"].constraints["IK"]
+        cons.chain_count=2
+        cons.pole_target=bpy.data.objects["rig"]
+        cons.pole_subtarget = "leftKneeIK"
+        
+        bpy.ops.pose.select_all(action='DESELECT')
+        bpy.context.object.pose.bones['rightLegIK'].bone.select = True
+        bpy.context.object.data.bones.active = bpy.context.object.data.bones['rightLeg']
+        bpy.ops.pose.constraint_add_with_targets(type='IK')
+        cons = bpy.context.object.pose.bones["rightLeg"].constraints["IK"]
+        cons.chain_count=2
+        cons.pole_target=bpy.data.objects["rig"]
+        cons.pole_subtarget = "rightKneeIK"
+        
+        bpy.ops.pose.select_all(action='DESELECT')
+        bpy.context.object.data.bones.active = bpy.context.object.data.bones['rightFoot']
+        bpy.ops.pose.constraint_add(type='COPY_ROTATION')
+        cons = bpy.context.object.pose.bones["rightFoot"].constraints["Copy Rotation"]
+        cons.target = bpy.data.objects["rig"]
+        cons.subtarget = "rightLegIK"
+        cons.invert_x = True
+        cons.invert_y = True
+        cons.invert_z = True
+        cons.target_space = 'LOCAL'
+        cons.owner_space = 'LOCAL'
+        
+        bpy.ops.pose.select_all(action='DESELECT')
+        bpy.context.object.data.bones.active = bpy.context.object.data.bones['leftFoot']
+        bpy.ops.pose.constraint_add(type='COPY_ROTATION')
+        cons = bpy.context.object.pose.bones["leftFoot"].constraints["Copy Rotation"]
+        cons.target = bpy.data.objects["rig"]
+        cons.subtarget = "leftLegIK"
+        cons.invert_x = True
+        cons.invert_y = True
+        cons.invert_z = True
+        cons.target_space = 'LOCAL'
+        cons.owner_space = 'LOCAL'
+        
+        bpy.context.scene.layers[1]=True
+        bpy.context.scene.layers[0]=False
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.select_all(action='SELECT')
+        bpy.ops.object.delete(use_global=False)
+        bpy.ops.mesh.primitive_torus_add(rotation=(0, 0, 0), view_align=False, location=(0, 0, 0), major_radius=coef*4, minor_radius=.2*coef)
+        bpy.context.selected_objects[0].name="MyTorus"
+        bpy.ops.mesh.primitive_uv_sphere_add(size=coef, location=(0, 0, 0))
+        bpy.context.selected_objects[0].name="MySphere"
+        bpy.context.scene.layers[0]=True
+        bpy.context.scene.layers[1]=False
+        
+        bpy.context.scene.objects.active = bpy.data.objects['rig']
+        bpy.ops.object.mode_set(mode='POSE')
+        bpy.context.object.pose.bones["control"].custom_shape = bpy.data.objects["MyTorus"]
+        bpy.context.object.pose.bones["firstControl"].custom_shape = bpy.data.objects["MySphere"]
+        bpy.context.object.pose.bones["rightKneeIK"].custom_shape = bpy.data.objects["MySphere"]
+        bpy.context.object.pose.bones["rightElbowIK"].custom_shape = bpy.data.objects["MySphere"]
+        bpy.context.object.pose.bones["leftKneeIK"].custom_shape = bpy.data.objects["MySphere"]
+        bpy.context.object.pose.bones["leftElbowIK"].custom_shape = bpy.data.objects["MySphere"]
 
     bpy.ops.object.mode_set(mode='OBJECT')
     
@@ -926,16 +960,135 @@ def walk():
         ra.keyframe_insert(data_path="location" ,frame=framee)
                         
 
+def numberFrame(fileName):
+    myFile = open(fileName)
+    fileContent = myFile.read()
+    pos = fileContent.find("Frames:") + 8
+    posF = fileContent.find("Frame", pos)
+    nb = fileContent[pos:posF]
+    print(nb)
+    return 200
+    
+def parsingBVH(fileName, offsetBones, nameBones, locationBonesBVH, rotationBonesBVH, tabLocationFrameBVH, tabRotationFrameBVH, nbFrame):
+    scene = bpy.context.scene
+    # On récupère le nobre de frame du BVH
+    nbFrame = numberFrame(fileName)
+    
+    # Traitement KeyFrame
+    ob = bpy.context.object
+    
+    if ob.type == 'ARMATURE':
+        armature = ob.data
+
+    for frame in range(0, int(nbFrame)):
+        scene.frame_set(frame)
+        for bone in armature.bones:
+            bpy.ops.object.mode_set(mode='POSE')
+            pbone = ob.pose.bones[bone.name]
+            # On passe en mode de rotation EULER 
+            pbone.rotation_mode = 'XYZ'
+            locationBonesBVH[bone.name.lower()] = pbone.location
+            rotationBonesBVH[bone.name.lower()] = pbone.matrix
+            bpy.ops.object.mode_set(mode='OBJECT')
+            #insert une keyframe
+            pbone.keyframe_insert(data_path="rotation_euler" ,frame = frame)
+        tabLocationFrameBVH[frame] = locationBonesBVH
+        tabRotationFrameBVH[frame] = rotationBonesBVH
+    # On cache le squelette du BVH
+    ob.hide = True
+    
+# Fonction qui permet de faire l'analogie entre les nom du squelette du BVh et ceux de l'auto-rigging
+def analogyzeBoneNames(boneName):
+    boneName = boneName.lower()
+    if boneName.find("head") != -1:
+        return "head"
+    elif boneName.find("neck") != -1:
+        return "neck"
+    elif boneName.find("spine") != -1:
+        return "spine"
+    elif boneName.find("lowerback") != -1 or boneName.find("back") != -1:
+        return "lowerback"
+    elif boneName.find("hips") != -1:
+        return "hips"
+    elif boneName.find("forearm") != -1 and (boneName.find("l") != -1 or boneName.find("left") != -1):
+        return "leftforearm"
+    elif boneName.find("arm") != -1 and (boneName.find("l") != -1 or boneName.find("left") != -1):
+        return "leftarm"
+    elif ((boneName.find("up") != -1 and boneName.find("leg") != -1) or boneName.find("thigh") != -1) and (boneName.find("right") != -1 or boneName.find("r") != -1):
+        return "rightupleg"
+    elif boneName.find("leg") != -1 and (boneName.find("right") != -1 or boneName.find("r") != -1):
+        return "rightleg"
+    elif ((boneName.find("up") != -1 and boneName.find("leg") != -1) or boneName.find("thigh") != -1) and (boneName.find("left") != -1 or boneName.find("l") != -1):
+        return "leftupleg"
+    elif boneName.find("leg") != -1 and (boneName.find("left") != -1 or boneName.find("l") != -1):
+        return "leftleg"
+    elif boneName.find("foot") != -1 and (boneName.find("left") != -1 or boneName.find("l") != -1):
+        return "leftfoot"
+    elif boneName.find("hand") != -1 and (boneName.find("left") != -1 or boneName.find("l") != -1):
+        return "lefthand"
+    elif boneName.find("forearm") != -1 and (boneName.find("r") != -1 or boneName.find("right") != -1):
+        return "rightforearm"
+    elif boneName.find("arm") != -1 and (boneName.find("r") != -1 or boneName.find("right") != -1):
+        return "rightarm"
+    elif boneName.find("foot") != -1 and (boneName.find("right") != -1 or boneName.find("r") != -1):
+        return "rightfoot"
+    elif boneName.find("hand") != -1 and (boneName.find("right") != -1 or boneName.find("r") != -1):
+        return "righthand"
+    else:
+        return "null"
+
+# Fonction qui permet d'appliquer la transformation de chaque bones à chaque frame sur le squelette de l'auo-rigging
+def applyTransformation(fileName, offsetBones, nameBones, locationBonesBVH, rotationBonesBVH, tabLocationFrameBVH, tabRotationFrameBVH, nbFrame):
+    ob = bpy.data.objects['rig']
+    bpy.context.scene.objects.active = ob
+    scene = bpy.context.scene
+    nbFrame = numberFrame(fileName)
+    if ob.type == 'ARMATURE':
+        armature = ob.data
+    
+    # On parcourt toutes les frames du BVH
+    for frame in range(0, int(nbFrame)):
+        scene.frame_set(frame)
+        transformationBones = tabRotationFrameBVH[frame]
+        positionBones = tabLocationFrameBVH[frame]
+        # On parcourt tous les os du squelette de l'auto-rigging
+        for bone in armature.bones:
+            analogyzeName = "null"
+            pbone = ob.pose.bones[bone.name]
+            if bone.name.lower().find("ik") == -1:
+                analogyzeName = analogyzeBoneNames(bone.name)
+            # "null" peut correspondre à un os non pris en compte par l'auro-rigging ou un os correspondant à un IK ou controller de rigging
+            #if analogyzeName == "null":
+                #print("ERREUR NAMING : " + bone.name)
+            #else:
+                #print(analogyzeName + " : " + bone.name)
+                
+            if analogyzeName != "null":
+                pbone.rotation_mode = 'XYZ'
+                pbone.matrix = transformationBones[analogyzeName]
+                pbone.keyframe_insert(data_path="rotation_euler" ,frame = frame)
+                if analogyzeName == "hips":
+                    pbone.location = positionBones[analogyzeName]
+                    pbone.keyframe_insert(data_path="location" ,frame = frame)
+                
+def retargeting():
+    
+    scene = bpy.context.scene
+    mytool = scene.my_tool
+    
+    fileName = mytool.bvhLocation
+    
+    offsetBones = {}
+    nameBones = []
+    locationBonesBVH = {}
+    rotationBonesBVH = {}
+    tabLocationFrameBVH = {}
+    tabRotationFrameBVH = {}
+    nbFrame = 0
+    
+    bpy.ops.import_anim.bvh(filepath=fileName)
+    parsingBVH(fileName, offsetBones, nameBones, locationBonesBVH, rotationBonesBVH, tabLocationFrameBVH, tabRotationFrameBVH, nbFrame)
+    applyTransformation(fileName, offsetBones, nameBones, locationBonesBVH, rotationBonesBVH, tabLocationFrameBVH, tabRotationFrameBVH, nbFrame)
+
 if __name__ == "__main__":
-    #bpy.ops.wm.mouse_position('INVOKE_DEFAULT')
-    balises = {}
-    
-    
-    
-    """balises["neckBase"] = bpy.data.objects["neckBase"].location
-    balises["pelvis"] = bpy.data.objects["pelvis"].location
-    balises["leftHand"] = bpy.data.objects["leftHand"].location
-    balises["rightHand"] = bpy.data.objects["rightHand"].location
-    balises["leftFoot"] = bpy.data.objects["leftFoot"].location
-    balises["rightFoot"] = bpy.data.objects["rightFoot"].location
-    print"""
+    print("init menu")

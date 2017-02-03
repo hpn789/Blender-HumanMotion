@@ -1,33 +1,5 @@
 import bpy
 from math import radians
-
-offsetBones = {}
-nameBones = []
-locationBonesBVH = {}
-rotationBonesBVH = {}
-tabLocationFrameBVH = {}
-tabRotationFrameBVH = {}
-nbFrame = 0
-
-def retrieveAllNameBones(content):
-    # On récupère le nom du root en premier
-    posDebRootName = content.find("root") + 5
-    posEndRootName = content.find("{") - 1 
-    
-    nameBones.append(content[posDebRootName : posEndRootName])
-    content = content[ content.find("{") + 1 : ]
-    
-    # On récupère le nom des autres os ensuite
-    while content.find("joint") != -1 :
-        posDebBone = content.find("joint") + 6
-        posEndBone = content.find("{") - 2
-        nameBone = content[posDebBone : posEndBone]
-        
-        if nameBone.find("\n") != -1 :
-            nameBone = nameBone[ : nameBone.find("\n")]
-            
-        nameBones.append(nameBone)
-        content = content[content.find("{") + 1 : ]
         
 def numberFrame(fileName):
     myFile = open(fileName)
@@ -36,9 +8,9 @@ def numberFrame(fileName):
     posF = fileContent.find("Frame", pos)
     nb = fileContent[pos:posF]
     print(nb)
-    return nb
+    return 200
     
-def parsingBVH(fileName):
+def parsingBVH(fileName, offsetBones, nameBones, locationBonesBVH, rotationBonesBVH, tabLocationFrameBVH, tabRotationFrameBVH, nbFrame):
     scene = bpy.context.scene
     # On récupère le nobre de frame du BVH
     nbFrame = numberFrame(fileName)
@@ -107,7 +79,7 @@ def analogyzeBoneNames(boneName):
         return "null"
 
 # Fonction qui permet d'appliquer la transformation de chaque bones à chaque frame sur le squelette de l'auo-rigging
-def applyTransformation(fileName):
+def applyTransformation(fileName, offsetBones, nameBones, locationBonesBVH, rotationBonesBVH, tabLocationFrameBVH, tabRotationFrameBVH, nbFrame):
     ob = bpy.data.objects['rig']
     bpy.context.scene.objects.active = ob
     scene = bpy.context.scene
@@ -141,11 +113,20 @@ def applyTransformation(fileName):
                     pbone.keyframe_insert(data_path="location" ,frame = frame)
                 
 def retargeting(fileName):
+    
+    offsetBones = {}
+    nameBones = []
+    locationBonesBVH = {}
+    rotationBonesBVH = {}
+    tabLocationFrameBVH = {}
+    tabRotationFrameBVH = {}
+    nbFrame = 0
+    
     bpy.ops.import_anim.bvh(filepath=fileName)
-    parsingBVH(fileName)
-    applyTransformation(fileName)
+    parsingBVH(fileName, offsetBones, nameBones, locationBonesBVH, rotationBonesBVH, tabLocationFrameBVH, tabRotationFrameBVH, nbFrame)
+    applyTransformation(fileName, offsetBones, nameBones, locationBonesBVH, rotationBonesBVH, tabLocationFrameBVH, tabRotationFrameBVH, nbFrame)
     
 # MAIN #
 
 # Mettre chemin du BVH
-retargeting("C:\\Users\\User\\Documents\\GitHub\\Blender-HumanMotion\\Blender\\BVH\\01\\01_01.bvh")
+retargeting("D:\\PC\\Documents\\GitHub\\Blender-HumanMotion\\Blender\\BVH\\01\\01_02.bvh")
